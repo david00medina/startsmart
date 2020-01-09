@@ -16,9 +16,14 @@ class TemplateViewSet(viewsets.ViewSet):
     def create(self, request):
         serializer = TemplateSerializer(data=request.data)
         if serializer.is_valid():
-            return Template.objects.create(**serializer.validated_data)
+            serializer.bounding_box(serializer.validated_data['bounding_box'])
+            serializer.set_template(serializer.validated_data)
+            serializer.create(serializer.validated_data)
+            response = Response(serializer.validated_data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.validated_data)
+        return response
 
     def update(self, request, pk=None):
         pass

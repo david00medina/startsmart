@@ -11,13 +11,7 @@ def upload(instance, filename):
 
 class JointContainer(models.Model):
     name = models.TextField()
-    indexes = models.ListField(models.PositiveIntegerField(max_length=2))
-
-    def __str__(self):
-        return '[' \
-                    + '"name": ' + '"' + self.name + '"' + ',' \
-                    + '"indexes": ' + str(self.indexes) + \
-                ']'
+    indexes = models.ListField(models.PositiveIntegerField(), max_length=2)
 
     class Meta:
         abstract = True
@@ -32,12 +26,6 @@ class JointContainerForm(forms.ModelForm):
 class FeatureContainer(models.Model):
     name = models.TextField()
     indexes = models.ListField(models.PositiveIntegerField())
-
-    def __str__(self):
-        return '[' \
-                    + '"name": ' + '"' + self.name + '"' + ',' \
-                    + '"indexes": ' + str(self.indexes) + \
-                ']'
 
     class Meta:
         abstract = True
@@ -54,14 +42,6 @@ class KeypointContainer(models.Model):
     dimension = models.CharField(max_length=2)
     data = models.ListField(models.FloatField())
     confidence = models.ListField(models.FloatField())
-
-    def __str__(self):
-        return '[' \
-                    + '"name": ' + '"' + self.name + '"' + ',' \
-                    + '"dimension": ' + str(self.dimension) + ',' \
-                    + '"data\": ' + str(self.data) + ',' \
-                    + '"confidence": ' + str(self.confidence) + ',' +\
-                ']'
 
     class Meta:
         abstract = True
@@ -82,22 +62,20 @@ class BoundingBoxContainer(models.Model):
     height = models.FloatField()
     depth = models.FloatField()
 
-    objects = models.DjongoManager()
-
     class Meta:
         abstract = True
 
 
 class BoundingBoxContainerForm(forms.ModelForm):
     class Meta:
-        model = BoundingBoxContainer
+        models = BoundingBoxContainer
         fields = '__all__'
 
 
 class Template(models.Model):
     name = models.CharField(max_length=100)  # Front, side-left, side-right, up-view, low-view?
     bounding_box = models.ArrayModelField(model_container=BoundingBoxContainer,
-                                          model_form_class=BoundingBoxContainerForm)
+                                          model_form_class=BoundingBoxContainerForm, null=True)
     keypoints_name = models.ListField(models.TextField(), null=True)
     keypoints_style = models.ListField(models.TextField(), null=True)
     keypoints = models.ArrayModelField(model_container=KeypointContainer,

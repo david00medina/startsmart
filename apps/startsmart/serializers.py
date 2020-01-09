@@ -1,29 +1,61 @@
 from rest_framework.fields import empty
 from rest_framework import serializers
+from djongo import models
 from .models import *
 
 
-class JointContainerSerializer(serializers.ModelSerializer):
-    dimension = serializers.CharField(max_length=2)
-    min_x = serializers.FloatField()
-    min_y = serializers.FloatField()
-    min_z = serializers.FloatField()
-    width = serializers.FloatField()
-    height = serializers.FloatField()
-    depth = serializers.FloatField()
+class JointContainerSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    indexes = serializers.ListSerializer(child=serializers.FloatField())
+
+    def validate(self, attrs):
+        if not isinstance(attrs['name'], str):
+            raise serializers.ValidationError("'name' attribute should be str")
+        if not isinstance(attrs['indexes'], list):
+            raise serializers.ValidationError("'indexes' attribute should be list")
+
+        return attrs
 
     class Meta:
         model = JointContainer
         fields = '__all__'
 
 
-class FeatureContainerSerializer(serializers.ModelSerializer):
+class FeatureContainerSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    indexes = serializers.ListSerializer(child=serializers.FloatField())
+
+    def validate(self, attrs):
+        if not isinstance(attrs['name'], str):
+            raise serializers.ValidationError("'name' attribute should be str")
+        if not isinstance(attrs['indexes'], list):
+            raise serializers.ValidationError("'indexes' attribute should be list")
+
+        return attrs
+
     class Meta:
         model = FeatureContainer
         fields = '__all__'
 
 
-class KeypointContainerSerializer(serializers.ModelSerializer):
+class KeypointContainerSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    dimension = serializers.CharField()
+    data = serializers.ListSerializer(child=serializers.FloatField())
+    confidence = serializers.ListSerializer(child=serializers.FloatField())
+
+    def validate(self, attrs):
+        if not isinstance(attrs['name'], str):
+            raise serializers.ValidationError("'name' attribute should be str")
+        if attrs['dimension'] != '2d' and attrs['dimension'] != '3d':
+            raise serializers.ValidationError("'dimension' attribute should be '2d' or '3d'")
+        if not isinstance(attrs['data'], list):
+            raise serializers.ValidationError("'data' attribute should be list")
+        if not isinstance(attrs['confidence'], list):
+            raise serializers.ValidationError("'confidence' attribute should be list")
+
+        return attrs
+
     class Meta:
         model = KeypointContainer
         fields = '__all__'
@@ -62,32 +94,40 @@ class BoundingBoxContainerSerializer(serializers.Serializer):
 
 
 class TemplateSerializer(serializers.ModelSerializer):
-    bounding_box = BoundingBoxContainerSerializer(many=True)
+    name = serializers.CharField()
+    bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
+    keypoints_name = serializers.ListSerializer(child=serializers.CharField())
+    keypoints_style = serializers.ListSerializer(child=serializers.CharField())
+    keypoints = KeypointContainerSerializer(many=True, required=False)
+    joints = JointContainerSerializer(many=True, required=False)
+    features = FeatureContainerSerializer(many=True, required=False)
+
+    def set_template(self, validated_data):
+        self.name = validated_data['name']
+
+        if 'bounding_box' in validated_data:
+            self.bounding_box = validated_data['bounding_box']
+
+        self.keypoints_name = validated_data['keypoints_name']
+        self.keypoints_style = validated_data['keypoints_style']
+
+        if 'keypoints' in validated_data:
+            self.keypoints = validated_data['keypoints']
+
+        if 'joints' in validated_data:
+            self.joints = validated_data['joints']
+
+        if 'features' in validated_data:
+            self.features = validated_data['features']
+
+    def create(self, validated_data):
+        template = Template(**validated_data)
+        template.save()
+        return template
 
     class Meta:
         model = Template
         fields = '__all__'
-
-    def get_bounding_box_method(self, obj):
-        return_data = None
-        if type(obj['bounding_box']) == list:
-            bounding_box_list = []
-            for item in obj['bounding_box']:
-                bounding_box_dict = item
-                for key in list(bounding_box_dict.keys()):
-                    if key.startswith('_'):
-                        bounding_box_dict.pop(key)
-                bounding_box_list.append(bounding_box_dict)
-            return_data = bounding_box_list
-        else:
-            bounding_box_dict = obj['bounding_box']
-            for key in list(bounding_box_dict.keys()):
-                if key.startswith('_'):
-                    bounding_box_dict.pop(key)
-            return_data = bounding_box_dict
-
-        self.data.update({'bounding_box': return_data})
-
 
 
 class ModelSerializer(serializers.ModelSerializer):
