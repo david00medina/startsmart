@@ -1,12 +1,53 @@
-from rest_framework.fields import empty
 from rest_framework import serializers
-from djongo import models
+from django.db.models.query import QuerySet
+from typing import List, Dict, Type
 from .models import *
+
+
+class CUDNestedMixin(object):
+    @staticmethod
+    def cud_nested(queryset: QuerySet,
+                   data: List[Dict],
+                   serializer: Type[serializers.Serializer],
+                   context: Dict):
+
+        updated_ids = list()
+        for_create = list()
+        for item in data:
+            item_id = item.get('id')
+            if item_id:
+                instance = queryset.get(id=item_id)
+                update_serializer = serializer(
+                    instance=instance,
+                    data=item,
+                    context=context
+                )
+                update_serializer.is_valid(raise_exception=True)
+                update_serializer.save()
+                updated_ids.append(instance.id)
+            else:
+                for_create.append(item)
+
+        if queryset is not None:
+            delete_queryset = queryset.exclude(id__in=updated_ids)
+            delete_queryset.delete()
+        if len(for_create) > 0:
+            create_serializer = serializer(
+                data=for_create,
+                many=True,
+                context=context
+            )
+            create_serializer.is_valid(raise_exception=True)
+            return create_serializer
 
 
 class JointContainerSerializer(serializers.Serializer):
     name = serializers.CharField()
     indexes = serializers.ListSerializer(child=serializers.FloatField())
+
+    def create(self, validated_data):
+        joint_container = JointContainer(**validated_data)
+        return joint_container
 
     def validate(self, attrs):
         if not isinstance(attrs['name'], str):
@@ -24,6 +65,10 @@ class JointContainerSerializer(serializers.Serializer):
 class FeatureContainerSerializer(serializers.Serializer):
     name = serializers.CharField()
     indexes = serializers.ListSerializer(child=serializers.FloatField())
+
+    def create(self, validated_data):
+        feature_container = FeatureContainer(**validated_data)
+        return feature_container
 
     def validate(self, attrs):
         if not isinstance(attrs['name'], str):
@@ -43,6 +88,10 @@ class KeypointContainerSerializer(serializers.Serializer):
     dimension = serializers.CharField()
     data = serializers.ListSerializer(child=serializers.FloatField())
     confidence = serializers.ListSerializer(child=serializers.FloatField())
+
+    def create(self, validated_data):
+        keypoint_container = KeypointContainer(**validated_data)
+        return keypoint_container
 
     def validate(self, attrs):
         if not isinstance(attrs['name'], str):
@@ -70,6 +119,10 @@ class BoundingBoxContainerSerializer(serializers.Serializer):
     height = serializers.FloatField()
     depth = serializers.FloatField(required=False)
 
+    def create(self, validated_data):
+        bounding_box_container = BoundingBoxContainer(**validated_data)
+        return bounding_box_container
+
     def validate(self, attrs):
         if attrs['dimension'] != '2d' and attrs['dimension'] != '3d':
             raise serializers.ValidationError("'dimension' attribute should be '2d' or '3d'")
@@ -89,11 +142,11 @@ class BoundingBoxContainerSerializer(serializers.Serializer):
         return attrs
 
     class Meta:
-        model = BoundingBoxContainer()
+        model = BoundingBoxContainer
         fields = '__all__'
 
 
-class TemplateSerializer(serializers.ModelSerializer):
+class TemplateSerializer(serializers.ModelSerializer, CUDNestedMixin):
     name = serializers.CharField()
     bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
     keypoints_name = serializers.ListSerializer(child=serializers.CharField())
@@ -102,28 +155,47 @@ class TemplateSerializer(serializers.ModelSerializer):
     joints = JointContainerSerializer(many=True, required=False)
     features = FeatureContainerSerializer(many=True, required=False)
 
-    def set_template(self, validated_data):
-        self.name = validated_data['name']
-
-        if 'bounding_box' in validated_data:
-            self.bounding_box = validated_data['bounding_box']
-
-        self.keypoints_name = validated_data['keypoints_name']
-        self.keypoints_style = validated_data['keypoints_style']
-
-        if 'keypoints' in validated_data:
-            self.keypoints = validated_data['keypoints']
-
-        if 'joints' in validated_data:
-            self.joints = validated_data['joints']
-
-        if 'features' in validated_data:
-            self.features = validated_data['features']
-
     def create(self, validated_data):
         template = Template(**validated_data)
+
+        if 'bounding_box' in validated_data.keys():
+            model_list = list()
+            for item in validated_data['bounding_box']:
+               model_list.append(BoundingBoxContainer(**item))
+
+        template.bounding_box = model_list
+
+        if 'keypoints' in validated_data.keys():
+            model_list = list()
+            for item in validated_data['keypoints']:
+                model_list.append(KeypointContainer(**item))
+
+        template.keypoints = model_list
+
+        if 'joints' in validated_data.keys():
+            model_list = list()
+            for item in validated_data['joints']:
+                model_list.append(JointContainer(**item))
+
+        template.joints = model_list
+
+        if 'features' in validated_data.keys():
+            model_list = list()
+            for item in validated_data['features']:
+                model_list.append(FeatureContainer(**item))
+
+        template.features = model_list
         template.save()
         return template
+
+    def update(self, instance, validated_data):
+        KeypointContainer.objects.all()
+        self.cud_nested(
+            queryset=instance.phone_set.all(),
+            data=validated_data,
+            serializer=BoundingBoxContainerSerializer,
+            context=self.context
+        )
 
     class Meta:
         model = Template

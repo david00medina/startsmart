@@ -6,27 +6,29 @@ from .serializers import *
 from .models import *
 
 
-class TemplateViewSet(viewsets.ViewSet):
+class TemplateViewSet(viewsets.ModelViewSet):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
     permission_classes = [
         permissions.AllowAny
     ]
 
-    def create(self, request):
+    def create(self, request, **kwargs):
         serializer = TemplateSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.bounding_box(serializer.validated_data['bounding_box'])
-            serializer.set_template(serializer.validated_data)
-            serializer.create(serializer.validated_data)
-            response = Response(serializer.validated_data)
+            template = serializer.create(request.data)
+            serializer = TemplateSerializer(template)
+            return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return response
-
-    def update(self, request, pk=None):
-        pass
+    def update(self, request, pk=None, **kwargs):
+        serializers = TemplateSerializer(data=request.data)
+        if serializers.is_valid():
+            a = 2
+            return Response(serializers.validated_data)
+        else:
+            return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ModelViewSet(viewsets.ModelViewSet):

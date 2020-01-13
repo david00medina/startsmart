@@ -87,6 +87,7 @@ class Template(models.Model):
     features = models.ArrayModelField(model_container=FeatureContainer,
                                       model_form_class=FeatureContainerForm,
                                       null=True)
+    objects = models.DjongoManager()
 
 
 class Model(models.Model):
