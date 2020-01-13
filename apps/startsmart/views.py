@@ -16,17 +16,25 @@ class TemplateViewSet(viewsets.ModelViewSet):
     def create(self, request, **kwargs):
         serializer = TemplateSerializer(data=request.data)
         if serializer.is_valid():
-            template = serializer.create(request.data)
-            serializer = TemplateSerializer(template)
+            result = serializer.create(serializer.validated_data)
+            serializer = TemplateSerializer(result)
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None, **kwargs):
-        serializers = TemplateSerializer(data=request.data)
-        if serializers.is_valid():
-            a = 2
-            return Response(serializers.validated_data)
+        try:
+            template = Template.objects.get(id=pk)
+        except Template.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = TemplateSerializer(template, data=request.data)
+        data = request.data.copy()
+        data.update({'id': pk})
+        if serializer.is_valid():
+            result = serializer.update(template, data)
+            serializer = TemplateSerializer(result)
+            return Response(serializer.data)
         else:
             return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
 

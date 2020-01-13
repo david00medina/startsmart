@@ -6,39 +6,24 @@ from .models import *
 
 class CUDNestedMixin(object):
     @staticmethod
-    def cud_nested(queryset: QuerySet,
-                   data: List[Dict],
-                   serializer: Type[serializers.Serializer],
-                   context: Dict):
+    def cud_nested(data: List[Dict],
+                   serializer: Type[serializers.Serializer]):
 
-        updated_ids = list()
-        for_create = list()
+        insert_list = list()
+        update_list = list()
         for item in data:
             item_id = item.get('id')
             if item_id:
-                instance = queryset.get(id=item_id)
-                update_serializer = serializer(
-                    instance=instance,
-                    data=item,
-                    context=context
-                )
-                update_serializer.is_valid(raise_exception=True)
-                update_serializer.save()
-                updated_ids.append(instance.id)
+                update_list.append(serializer(data=item))
             else:
-                for_create.append(item)
+                insert_list.append(serializer(data=item))
 
-        if queryset is not None:
-            delete_queryset = queryset.exclude(id__in=updated_ids)
-            delete_queryset.delete()
-        if len(for_create) > 0:
-            create_serializer = serializer(
-                data=for_create,
-                many=True,
-                context=context
-            )
-            create_serializer.is_valid(raise_exception=True)
-            return create_serializer
+        if len(insert_list) > 0:
+            for obj in insert_list:
+                obj.is_valid(raise_exception=True)
+            return insert_list
+
+        return insert_list
 
 
 class JointContainerSerializer(serializers.Serializer):
@@ -147,55 +132,70 @@ class BoundingBoxContainerSerializer(serializers.Serializer):
 
 
 class TemplateSerializer(serializers.ModelSerializer, CUDNestedMixin):
-    name = serializers.CharField()
+    name = serializers.CharField(required=False)
     bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
-    keypoints_name = serializers.ListSerializer(child=serializers.CharField())
-    keypoints_style = serializers.ListSerializer(child=serializers.CharField())
+    keypoints_name = serializers.ListSerializer(child=serializers.CharField(), required=False)
+    keypoints_style = serializers.ListSerializer(child=serializers.CharField(), required=False)
     keypoints = KeypointContainerSerializer(many=True, required=False)
     joints = JointContainerSerializer(many=True, required=False)
     features = FeatureContainerSerializer(many=True, required=False)
 
+    def __set_template(self, validated_data=None):
+        self.name = None
+        self.keypoints_name = None
+        self.keypoints_style = None
+        self.bounding_box = None
+        self.keypoints = None
+        self.joints = None
+        self.features = None
+
+        if 'name' in validated_data.keys():
+            self.name = validated_data['name']
+        if 'keypoints_name' in validated_data.keys():
+            self.keypoints_name = validated_data['keypoints_name']
+        if 'keypoints_style' in validated_data.keys():
+            self.keypoints_style = validated_data['keypoints_style']
+        if 'bounding_box' in validated_data.keys():
+            self.bounding_box = self.cud_nested(validated_data['bounding_box'], BoundingBoxContainerSerializer)
+        if 'keypoints' in validated_data.keys():
+            self.keypoints = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
+        if 'joints' in validated_data.keys():
+            self.joints = self.cud_nested(validated_data['joints'], JointContainerSerializer)
+        if 'features' in validated_data.keys():
+            self.features = self.cud_nested(validated_data['features'], FeatureContainerSerializer)
+
     def create(self, validated_data):
         template = Template(**validated_data)
-
-        if 'bounding_box' in validated_data.keys():
-            model_list = list()
-            for item in validated_data['bounding_box']:
-               model_list.append(BoundingBoxContainer(**item))
-
-        template.bounding_box = model_list
-
-        if 'keypoints' in validated_data.keys():
-            model_list = list()
-            for item in validated_data['keypoints']:
-                model_list.append(KeypointContainer(**item))
-
-        template.keypoints = model_list
-
-        if 'joints' in validated_data.keys():
-            model_list = list()
-            for item in validated_data['joints']:
-                model_list.append(JointContainer(**item))
-
-        template.joints = model_list
-
-        if 'features' in validated_data.keys():
-            model_list = list()
-            for item in validated_data['features']:
-                model_list.append(FeatureContainer(**item))
-
-        template.features = model_list
+        self.__set_template(validated_data)
+        if self.bounding_box is not None:
+            template.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
+        if self.keypoints is not None:
+            template.keypoints = [KeypointContainer(**keypoints.data) for keypoints in self.keypoints]
+        if self.joints is not None:
+            template.joints = [JointContainer(**joints.data) for joints in self.joints]
+        if self.features is not None:
+            template.features = [FeatureContainer(**features.data) for features in self.features]
         template.save()
         return template
 
     def update(self, instance, validated_data):
-        KeypointContainer.objects.all()
-        self.cud_nested(
-            queryset=instance.phone_set.all(),
-            data=validated_data,
-            serializer=BoundingBoxContainerSerializer,
-            context=self.context
-        )
+        self.__set_template(validated_data)
+        if self.name is not None:
+            instance.name = self.name
+        if self.keypoints_name is not None:
+            instance.keypoints_name = self.keypoints_name
+        if self.keypoints_style is not None:
+            instance.keypoints_style = self.keypoints_style
+        if self.bounding_box is not None:
+            instance.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
+        if self.keypoints is not None:
+            instance.keypoints = [KeypointContainer(**keypoints.data) for keypoints in self.keypoints]
+        if self.joints is not None:
+            instance.joints = [JointContainer(**joints.data) for joints in self.joints]
+        if self.features is not None:
+            instance.features = [FeatureContainer(**features.data) for features in self.features]
+        instance.save()
+        return instance
 
     class Meta:
         model = Template
