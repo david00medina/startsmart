@@ -256,7 +256,47 @@ class DatasetSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AnnotationSerializer(serializers.ModelSerializer):
+class AnnotationSerializer(serializers.ModelSerializer, CUDNestedMixin):
+    project = serializers.IntegerField(required=False)
+    category = serializers.IntegerField(required=False)
+    image = serializers.IntegerField(required=False)
+    frame = serializers.IntegerField(required=False)
+    keypoints = KeypointContainerSerializer(many=True, required=False)
+    bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
+
+    def __set_annotation(self, validated_data):
+        if 'project' in validated_data.keys():
+            self.project = validated_data['project']
+        if 'category' in validated_data.keys():
+            self.category = validated_data['category']
+        if 'image' in validated_data.keys():
+            self.image = validated_data['image']
+        if 'frame' in validated_data.keys():
+            self.frame = validated_data['frame']
+        if 'bounding_box' in validated_data.keys():
+            self.bounding_box = self.cud_nested(validated_data['bounding_box'], BoundingBoxContainerSerializer)
+        if 'keypoints' in validated_data.keys():
+            self.keypoints = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
+
+    def create(self, validated_data):
+        annotation = Annotation(**validated_data)
+        self.__set_annotation(validated_data)
+        if self.bounding_box is not None:
+            annotation.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
+        if self.keypoints is not None:
+            annotation.keypoints = [KeypointContainer(**keypoints.data) for keypoints in self.keypoints]
+        annotation.save()
+        return annotation
+
+    def update(self, instance, validated_data):
+        self.__set_annotation(validated_data)
+        if self.bounding_box is not None:
+            instance.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
+        if self.keypoints is not None:
+            instance.keypoints = [KeypointContainer(**keypoints.data) for keypoints in self.keypoints]
+        instance.save()
+        return instance
+
     class Meta:
         model = Annotation
         fields = '__all__'

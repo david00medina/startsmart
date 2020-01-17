@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db.models import Q
 from .serializers import *
 from .models import *
 
@@ -12,6 +13,16 @@ class TemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [
         permissions.AllowAny
     ]
+
+    def get_queryset(self):
+        query_name = self.request.GET.get("name")
+        query_id = self.request.GET.get("id")
+        if query_id is not None and query_name is not None:
+            return Template.objects.filter(Q(id__exact=query_id)).filter(Q(name__icontains=query_name))
+        if query_id is not None:
+            return Template.objects.filter(Q(id__exact=query_id))
+        if query_name is not None:
+            return Template.objects.filter(Q(name__icontains=query_name))
 
     def create(self, request, **kwargs):
         serializer = TemplateSerializer(data=request.data)
