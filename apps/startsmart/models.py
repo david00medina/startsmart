@@ -2,11 +2,18 @@ from datetime import datetime
 from djongo import models
 from django import forms
 import uuid
+import os
 
 
 def upload(instance, filename):
-    return 'uploads/%s_%s/%s' % \
-           (instance.user, instance.user.id, uuid.uuid3(uuid.NAMESPACE_DNS, filename + datetime.now().__str__()))
+    new_filename = '%s%s' % \
+               (uuid.uuid3(uuid.NAMESPACE_DNS, filename + datetime.now().__str__()),
+                os.path.splitext(filename)[-1])
+    if isinstance(instance, Image):
+        return 'images/' + new_filename
+    else:
+        return 'videos/' + new_filename
+
 
 
 class JointContainer(models.Model):
@@ -117,23 +124,19 @@ class License(models.Model):
 
 
 class Image(models.Model):
-    license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True)
-    roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, null=True)
+    license = models.ForeignKey(License, on_delete=models.SET_NULL, blank=True, null=True, default=None)
+    roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    filename = models.TextField()
-    url = models.URLField()
-    image = models.ImageField()
-    channel_no = models.PositiveIntegerField()
+    uri = models.ImageField(upload_to=upload)
 
 
 class Video(models.Model):
     license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    filename = models.TextField()
-    total_frames = models.PositiveIntegerField()
-    url = models.URLField()
+    uri = models.FileField(upload_to=upload)
+    total_frames = models.PositiveIntegerField(null=True)
 
 
 class Frame(models.Model):
@@ -141,11 +144,8 @@ class Frame(models.Model):
     roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    filename = models.TextField()
     frame_no = models.PositiveIntegerField()
-    url = models.URLField()
     image = models.ImageField()
-    channel_no = models.PositiveIntegerField()
 
 
 class Project(models.Model):
@@ -160,13 +160,13 @@ class Dataset(models.Model):
 
 
 class Annotation(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, blank=True)
-    image = models.ForeignKey(Image, on_delete=models.CASCADE, blank=True)
-    frame = models.ForeignKey(Frame, on_delete=models.CASCADE, blank=True)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, default=None)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE, default=None)
+    image = models.ForeignKey('Image', on_delete=models.CASCADE, default=None)
+    frame = models.ForeignKey('Frame', on_delete=models.CASCADE, default=None)
     keypoints = models.ArrayModelField(model_container=KeypointContainer,
                                        model_form_class=KeypointContainerForm,
-                                       blank=True)
+                                       null=True)
     bounding_box = models.ArrayModelField(model_container=BoundingBoxContainer,
                                           model_form_class=BoundingBoxContainerForm,
-                                          blank=True)
+                                          null=True)

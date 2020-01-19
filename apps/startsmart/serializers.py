@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.db.models.query import QuerySet
+from django.shortcuts import get_object_or_404
 from typing import List, Dict, Type
 from .models import *
 
@@ -96,30 +97,30 @@ class KeypointContainerSerializer(serializers.Serializer):
 
 
 class BoundingBoxContainerSerializer(serializers.Serializer):
-    dimension = serializers.CharField(required=True, max_length=2)
+    dimension = serializers.CharField(max_length=2)
     min_x = serializers.FloatField()
     min_y = serializers.FloatField()
-    min_z = serializers.FloatField(required=False)
+    min_z = serializers.FloatField()
     width = serializers.FloatField()
     height = serializers.FloatField()
-    depth = serializers.FloatField(required=False)
+    depth = serializers.FloatField()
 
     def create(self, validated_data):
         bounding_box_container = BoundingBoxContainer(**validated_data)
         return bounding_box_container
 
     def validate(self, attrs):
-        if attrs['dimension'] != '2d' and attrs['dimension'] != '3d':
+        if 'dimension' in attrs.keys() and attrs['dimension'] != '2d' and attrs['dimension'] != '3d':
             raise serializers.ValidationError("'dimension' attribute should be '2d' or '3d'")
-        if not isinstance(attrs['min_x'], float):
+        if 'min_x' in attrs.keys() and not isinstance(attrs['min_x'], float):
             raise serializers.ValidationError("'min_x' attribute should be float")
-        if not isinstance(attrs['min_y'], float):
+        if 'min_y' in attrs.keys() and not isinstance(attrs['min_y'], float):
             raise serializers.ValidationError("'min_y' attribute should be float")
         if 'min_z' in attrs.keys() and not isinstance(attrs['min_z'], float):
             raise serializers.ValidationError("'min_z' attribute should be float")
-        if not isinstance(attrs['width'], float):
+        if 'width' in attrs.keys() and not isinstance(attrs['width'], float):
             raise serializers.ValidationError("'width' attribute should be float")
-        if not isinstance(attrs['height'], float):
+        if 'height' in attrs.keys() and not isinstance(attrs['height'], float):
             raise serializers.ValidationError("'height' attribute should be float")
         if 'depth' in attrs.keys() and not isinstance(attrs['depth'], float):
             raise serializers.ValidationError("'depth' attribute should be float")
@@ -131,7 +132,7 @@ class BoundingBoxContainerSerializer(serializers.Serializer):
         fields = '__all__'
 
 
-class TemplateSerializer(serializers.ModelSerializer, CUDNestedMixin):
+class TemplateSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixin):
     name = serializers.CharField(required=False)
     bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
     keypoints_name = serializers.ListSerializer(child=serializers.CharField(), required=False)
@@ -202,69 +203,88 @@ class TemplateSerializer(serializers.ModelSerializer, CUDNestedMixin):
         fields = '__all__'
 
 
-class ModelSerializer(serializers.ModelSerializer):
+class ModelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Model
         fields = '__all__'
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
 
 
-class RegionOfInterestSerializer(serializers.ModelSerializer):
+class RegionOfInterestSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='roi-detail',
+        lookup_field='pk'
+    )
     class Meta:
         model = RegionOfInterest
         fields = '__all__'
 
 
-class LicenseSerializer(serializers.ModelSerializer):
+class LicenseSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = License
         fields = '__all__'
 
 
-class ImageSerializer(serializers.ModelSerializer):
+class ImageSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='image-detail',
+        lookup_field='pk'
+    )
+    roi = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='roi-detail'
+    )
+
     class Meta:
-        model = Frame
+        model = Image
         fields = '__all__'
 
 
-class VideoSerializer(serializers.ModelSerializer):
+class VideoSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Video
         fields = '__all__'
 
 
-class FrameSerializer(serializers.ModelSerializer):
+class FrameSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Frame
         fields = '__all__'
 
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Project
         fields = '__all__'
 
 
-class DatasetSerializer(serializers.ModelSerializer):
+class DatasetSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Dataset
         fields = '__all__'
 
 
-class AnnotationSerializer(serializers.ModelSerializer, CUDNestedMixin):
-    project = serializers.IntegerField(required=False)
-    category = serializers.IntegerField(required=False)
-    image = serializers.IntegerField(required=False)
-    frame = serializers.IntegerField(required=False)
+class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixin):
+    project = serializers.HyperlinkedRelatedField(read_only=True, view_name='project-detail')
+    category = serializers.HyperlinkedRelatedField(read_only=True, view_name='category-detail')
+    image = serializers.HyperlinkedRelatedField(read_only=True, view_name='image-detail')
+    frame = serializers.HyperlinkedRelatedField(read_only=True, view_name='frame-detail')
     keypoints = KeypointContainerSerializer(many=True, required=False)
     bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
 
     def __set_annotation(self, validated_data):
+        self.project = None
+        self.category = None
+        self.image = None
+        self.frame = None
+        self.keypoints = None
+        self.bounding_box = None
         if 'project' in validated_data.keys():
             self.project = validated_data['project']
         if 'category' in validated_data.keys():
@@ -279,8 +299,14 @@ class AnnotationSerializer(serializers.ModelSerializer, CUDNestedMixin):
             self.keypoints = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
 
     def create(self, validated_data):
-        annotation = Annotation(**validated_data)
         self.__set_annotation(validated_data)
+        annotation = Annotation()
+        annotation.project = get_object_or_404(Project.objects.all(), pk=self.project)
+        annotation.category = get_object_or_404(Category.objects.all(), pk=self.category)
+        if self.image is not None:
+            annotation.image = get_object_or_404(Image.objects.all(), pk=self.image)
+        if self.frame is not None:
+            annotation.frame = get_object_or_404(Frame.objects.all(), pk=self.frame)
         if self.bounding_box is not None:
             annotation.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
         if self.keypoints is not None:
@@ -290,6 +316,12 @@ class AnnotationSerializer(serializers.ModelSerializer, CUDNestedMixin):
 
     def update(self, instance, validated_data):
         self.__set_annotation(validated_data)
+        instance.project = get_object_or_404(Project.objects.all(), pk=self.project)
+        instance.category = get_object_or_404(Category.objects.all(), pk=self.category)
+        if self.image is not None:
+            instance.image = get_object_or_404(Image.objects.all(), pk=self.image)
+        if self.frame is not None:
+            instance.frame = get_object_or_404(Frame.objects.all(), pk=self.frame)
         if self.bounding_box is not None:
             instance.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
         if self.keypoints is not None:
