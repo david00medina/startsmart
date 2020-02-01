@@ -1,4 +1,4 @@
-from src.io.reader.AbstractReader import AbstractReader
+from apps.startsmart.annotator.io.reader.AbstractReader import AbstractReader
 import json
 
 

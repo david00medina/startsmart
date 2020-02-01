@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "webpack --mode development ./apps/frontend/src/index.js --output ./apps/frontend/static/frontend/main.js",
+    "dev": "webpack --mode development --watch ./apps/frontend/src/index.js --output ./apps/frontend/static/frontend/main.js",
     "build": "webpack --mode production ./apps/frontend/src/index.js --output ./apps/frontend/static/frontend/main.js"
   },
   "keywords": [],
@@ -20,8 +20,17 @@
     "webpack-cli": "^3.3.10"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.12.0",
+    "@fortawesome/fontawesome-svg-core": "^1.2.26",
+    "@fortawesome/free-brands-svg-icons": "^5.12.0",
+    "@fortawesome/free-regular-svg-icons": "^5.12.0",
+    "@fortawesome/free-solid-svg-icons": "^5.12.0",
+    "@fortawesome/react-fontawesome": "^0.1.8",
+    "css-loader": "^3.4.2",
     "prop-types": "^15.7.2",
     "react": "^16.12.0",
-    "react-dom": "^16.12.0"
+    "react-dom": "^16.12.0",
+    "react-router-dom": "^5.1.2",
+    "react-scripts": "^3.3.0"
   }
 }

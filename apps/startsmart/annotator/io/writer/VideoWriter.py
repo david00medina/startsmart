@@ -1,5 +1,5 @@
-from src.io.writer.AbstractWriter import AbstractWriter
-from src.tools.FrameHandler import FrameHandler
+from apps.startsmart.annotator.io.writer.AbstractWriter import AbstractWriter
+from apps.startsmart.annotator.tools.FrameHandler import FrameHandler
 import os
 import cv2 as cv
 

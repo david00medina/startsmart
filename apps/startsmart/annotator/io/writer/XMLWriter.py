@@ -1,4 +1,4 @@
-from src.io.reader.Writer import Writer
+from apps.startsmart.annotator.io.reader.Writer import Writer
 import dicttoxml
 
 

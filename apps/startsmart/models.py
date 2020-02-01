@@ -11,8 +11,10 @@ def upload(instance, filename):
                 os.path.splitext(filename)[-1])
     if isinstance(instance, Image):
         return 'images/' + new_filename
-    else:
+    elif isinstance(instance, Video):
         return 'videos/' + new_filename
+    elif isinstance(instance, Frame):
+        return 'frames/' + os.path.splitext(os.path.basename(instance.video.uri.name))[0] + '/' + new_filename
 
 
 
@@ -64,10 +66,10 @@ class BoundingBoxContainer(models.Model):
     dimension = models.CharField(max_length=2)
     min_x = models.FloatField()
     min_y = models.FloatField()
-    min_z = models.FloatField()
+    min_z = models.FloatField(null=True)
     width = models.FloatField()
     height = models.FloatField()
-    depth = models.FloatField()
+    depth = models.FloatField(null=True)
 
     class Meta:
         abstract = True
@@ -80,6 +82,8 @@ class BoundingBoxContainerForm(forms.ModelForm):
 
 
 class Template(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     name = models.CharField(max_length=100)  # Front, side-left, side-right, up-view, low-view?
     bounding_box = models.ArrayModelField(model_container=BoundingBoxContainer,
                                           model_form_class=BoundingBoxContainerForm, null=True)
@@ -98,17 +102,36 @@ class Template(models.Model):
 
 
 class Model(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     template = models.ForeignKey(Template, on_delete=models.SET_NULL, null=True)
     name = models.TextField()
 
 
 class Category(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     model = models.ForeignKey(Model, on_delete=models.SET_NULL, null=True)
     name = models.TextField()
     supercategory = models.TextField()
 
 
+class Project(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+    name = models.TextField()
+
+
+class Dataset(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
+    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True)
+    name = models.TextField()
+
+
 class RegionOfInterest(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     name = models.TextField()
     style = models.TextField(default='#FFFFFF')
     frame_range = models.ListField(models.PositiveIntegerField(), max_length=2)
@@ -116,6 +139,8 @@ class RegionOfInterest(models.Model):
 
 
 class License(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     right_holder = models.TextField(blank=True)
     home_page = models.URLField(blank=True)
     email = models.ListField(models.EmailField(blank=True), blank=True)
@@ -124,42 +149,41 @@ class License(models.Model):
 
 
 class Image(models.Model):
-    license = models.ForeignKey(License, on_delete=models.SET_NULL, blank=True, null=True, default=None)
-    roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    uri = models.ImageField(upload_to=upload)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True, default=None)
+    roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, null=True, default=None)
+    uri = models.ImageField(upload_to=upload, null=True)
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    channels = models.PositiveIntegerField(default=0)
 
 
 class Video(models.Model):
-    license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    uri = models.FileField(upload_to=upload)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True)
+    uri = models.FileField(upload_to=upload, null=True)
     total_frames = models.PositiveIntegerField(null=True)
 
 
 class Frame(models.Model):
-    video = models.ForeignKey(Video, on_delete=models.CASCADE, blank=True)
-    roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, blank=True)
+    roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, blank=True, null=True, default=None)
     frame_no = models.PositiveIntegerField()
-    image = models.ImageField()
-
-
-class Project(models.Model):
-    name = models.TextField()
-
-
-class Dataset(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True)
-    video = models.ArrayReferenceField(Video, on_delete=models.SET_NULL, null=True)
-    image = models.ArrayReferenceField(Image, on_delete=models.SET_NULL, null=True)
-    name = models.TextField()
+    uri = models.ImageField(upload_to=upload, null=True)
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    channels = models.PositiveIntegerField(default=0)
 
 
 class Annotation(models.Model):
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_modified = models.DateTimeField(auto_now=True)
     project = models.ForeignKey('Project', on_delete=models.CASCADE, default=None)
     category = models.ForeignKey('Category', on_delete=models.CASCADE, default=None)
     image = models.ForeignKey('Image', on_delete=models.CASCADE, default=None)

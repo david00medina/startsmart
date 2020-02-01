@@ -1,8 +1,10 @@
-from rest_framework import serializers
+from apps.startsmart.annotator.tools.FrameHandler import FrameHandler
+from django.shortcuts import get_object_or_404, get_list_or_404
 from django.db.models.query import QuerySet
-from django.shortcuts import get_object_or_404
+from rest_framework import serializers
 from typing import List, Dict, Type
 from .models import *
+import cv2 as cv
 
 
 class CUDNestedMixin(object):
@@ -100,10 +102,10 @@ class BoundingBoxContainerSerializer(serializers.Serializer):
     dimension = serializers.CharField(max_length=2)
     min_x = serializers.FloatField()
     min_y = serializers.FloatField()
-    min_z = serializers.FloatField()
+    min_z = serializers.FloatField(required=False)
     width = serializers.FloatField()
     height = serializers.FloatField()
-    depth = serializers.FloatField()
+    depth = serializers.FloatField(required=False)
 
     def create(self, validated_data):
         bounding_box_container = BoundingBoxContainer(**validated_data)
@@ -236,10 +238,58 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
         view_name='image-detail',
         lookup_field='pk'
     )
-    roi = serializers.HyperlinkedRelatedField(
+    dataset = serializers.HyperlinkedRelatedField(
         read_only=True,
         view_name='roi-detail'
     )
+    license = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='license-detail'
+    )
+    roi = serializers.HyperlinkedRelatedField(
+        required=False,
+        allow_null=True,
+        read_only=True,
+        view_name='roi-detail'
+    )
+
+    def save(self, **kwargs):
+        self.instance = self.create(self.validated_data)
+
+    def create(self, validated_data):
+        image = Image()
+        image.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
+        if 'license' in self.initial_data:
+            image.license = get_object_or_404(License, pk=self.initial_data['license'])
+        if 'roi' in self.initial_data:
+            image.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
+        image.uri = validated_data['uri']
+        image.save()
+        cap = cv.VideoCapture('http://' + self.context['request'].get_host() + image.uri.url)
+        ret, img = cap.read()
+        image.height = img.shape[0]
+        image.width = img.shape[1]
+        image.channels = img.shape[2]
+        image.save()
+        cap.release()
+        return image
+
+    def update(self, instance, validated_data):
+        instance.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
+        if 'license' in self.initial_data:
+            instance.license = get_object_or_404(License, pk=self.initial_data['license'])
+        if 'roi' in self.initial_data:
+            instance.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
+        if 'uri' in self.validated_data:
+            instance.uri = validated_data['uri']
+        instance.save()
+        cap = cv.VideoCapture('http://' + self.context['request'].get_host() + instance.uri.url)
+        ret, img = cap.read()
+        instance.height = img.shape[0]
+        instance.width = img.shape[1]
+        instance.channels = img.shape[2]
+        instance.save()
+        cap.release()
 
     class Meta:
         model = Image
@@ -247,12 +297,102 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class VideoSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='video-detail',
+        lookup_field='pk'
+    )
+    dataset = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='roi-detail'
+    )
+    license = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='license-detail'
+    )
+
+    def save(self, **kwargs):
+        self.instance = self.create(self.validated_data)
+
+    def create(self, validated_data):
+        video = Video()
+        video.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
+        if 'license' in self.initial_data:
+            video.license = get_object_or_404(License, pk=self.initial_data['license'])
+        video.uri = validated_data['uri']
+        video.save()
+        cVideo = cv.VideoCapture('http://' + self.context['request'].get_host() + video.uri.url)
+        video.total_frames = FrameHandler.get_total_frames(cVideo)
+        video.save()
+        return video
+
+    def update(self, instance, validated_data):
+        instance.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
+        if 'license' in self.initial_data:
+            instance.license = get_object_or_404(License, pk=self.initial_data['license'])
+        if 'uri' in self.validated_data:
+            instance.uri = validated_data['uri']
+        instance.save()
+        cVideo = cv.VideoCapture('http://' + self.context['request'].get_host() + instance.uri.url)
+        instance.total_frames = FrameHandler.get_total_frames(cVideo)
+        instance.save()
+
     class Meta:
         model = Video
         fields = '__all__'
 
 
 class FrameSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='frame-detail',
+        lookup_field='pk'
+    )
+    video = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='video-detail'
+    )
+    roi = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='roi-detail'
+    )
+
+    def save(self, **kwargs):
+        self.instance = self.create(self.validated_data)
+
+    def create(self, validated_data):
+        frame = Frame()
+        frame.video = get_object_or_404(Video, pk=self.initial_data['video'])
+        if 'roi' in self.initial_data:
+            frame.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
+        if 'frame_no' in validated_data:
+            frame.frame_no = validated_data['frame_no']
+        frame.uri = validated_data['uri']
+        frame.save()
+        cap = cv.VideoCapture('http://' + self.context['request'].get_host() + frame.uri.url)
+        ret, img = cap.read()
+        frame.height = img.shape[0]
+        frame.width = img.shape[1]
+        frame.channels = img.shape[2]
+        frame.save()
+        cap.release()
+        return frame
+
+    def update(self, instance, validated_data):
+        instance.video = get_object_or_404(Video, pk=self.initial_data['video'])
+        if 'roi' in self.initial_data:
+            instance.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
+        if 'uri' in self.validated_data:
+            instance.uri = validated_data['uri']
+        if 'frame_no' in validated_data:
+            instance.frame_no = validated_data['frame_no']
+        instance.save()
+        cap = cv.VideoCapture('http://' + self.context['request'].get_host() + instance.uri.url)
+        ret, img = cap.read()
+        instance.height = img.shape[0]
+        instance.width = img.shape[1]
+        instance.channels = img.shape[2]
+        instance.save()
+        cap.release()
+
     class Meta:
         model = Frame
         fields = '__all__'
@@ -265,6 +405,30 @@ class ProjectSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class DatasetSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dataset-detail',
+        lookup_field='pk'
+    )
+    project = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='project-detail'
+    )
+
+    def save(self, **kwargs):
+        self.instance = self.create(self.validated_data)
+
+    def create(self, validated_data):
+        dataset = Dataset()
+        dataset.project = get_object_or_404(Project, pk=self.initial_data['project'])
+        dataset.name = validated_data['name']
+        dataset.save()
+        return dataset
+
+    def update(self, instance, validated_data):
+        instance.project = get_object_or_404(Project, pk=self.initial_data['project'])
+        instance.name = validated_data['name']
+        instance.save()
+
     class Meta:
         model = Dataset
         fields = '__all__'

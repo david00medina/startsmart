@@ -1,4 +1,4 @@
-from src.io.writer.AbstractWriter import AbstractWriter
+from apps.startsmart.annotator.io.writer.AbstractWriter import AbstractWriter
 import cv2 as cv
 
 
