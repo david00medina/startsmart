@@ -270,20 +270,18 @@ class AnnotationViewSet(viewsets.ModelViewSet):
     def create(self, request, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
-            result = serializer.create(serializer.initial_data)
-            serializer = self.serializer_class(result, context={'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            serializer = self.serializer_class(serializer.instance, data=request.data, context={'request': request})
+            if serializer.is_valid():
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, pk=None, **kwargs):
-        annotation = get_object_or_404(Annotation, pk=pk)
-        serializer = self.serializer_class(annotation, data=request.data, context={'request': request})
-        data = request.data.copy()
-        data.update({'id': pk})
+        object = get_object_or_404(self.queryset, pk=pk)
+        serializer = self.serializer_class(object, data=request.data, context={'request': request})
         if serializer.is_valid():
-            result = serializer.update(annotation, data)
-            serializer = self.serializer_class(result, context={'request': request})
-            return Response(serializer.data)
+            serializer.update(object, serializer.validated_data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

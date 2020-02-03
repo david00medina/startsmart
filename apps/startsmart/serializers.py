@@ -435,63 +435,63 @@ class DatasetSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixin):
-    project = serializers.HyperlinkedRelatedField(read_only=True, view_name='project-detail')
-    category = serializers.HyperlinkedRelatedField(read_only=True, view_name='category-detail')
-    image = serializers.HyperlinkedRelatedField(read_only=True, view_name='image-detail')
-    frame = serializers.HyperlinkedRelatedField(read_only=True, view_name='frame-detail')
+    url = serializers.HyperlinkedIdentityField(
+        view_name='dataset-detail',
+        lookup_field='pk'
+    )
+    project = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='project-detail'
+    )
+    category = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='category-detail'
+    )
+    image = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='image-detail'
+    )
+    frame = serializers.HyperlinkedRelatedField(
+        read_only=True,
+        view_name='frame-detail'
+    )
     keypoints = KeypointContainerSerializer(many=True, required=False)
     bounding_box = BoundingBoxContainerSerializer(many=True, required=False)
 
-    def __set_annotation(self, validated_data):
-        self.project = None
-        self.category = None
-        self.image = None
-        self.frame = None
-        self.keypoints = None
-        self.bounding_box = None
-        if 'project' in validated_data.keys():
-            self.project = validated_data['project']
-        if 'category' in validated_data.keys():
-            self.category = validated_data['category']
-        if 'image' in validated_data.keys():
-            self.image = validated_data['image']
-        if 'frame' in validated_data.keys():
-            self.frame = validated_data['frame']
-        if 'bounding_box' in validated_data.keys():
-            self.bounding_box = self.cud_nested(validated_data['bounding_box'], BoundingBoxContainerSerializer)
-        if 'keypoints' in validated_data.keys():
-            self.keypoints = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
+    def save(self, **kwargs):
+        self.instance = self.create(self.validated_data)
 
     def create(self, validated_data):
-        self.__set_annotation(validated_data)
         annotation = Annotation()
-        annotation.project = get_object_or_404(Project.objects.all(), pk=self.project)
-        annotation.category = get_object_or_404(Category.objects.all(), pk=self.category)
-        if self.image is not None:
-            annotation.image = get_object_or_404(Image.objects.all(), pk=self.image)
-        if self.frame is not None:
-            annotation.frame = get_object_or_404(Frame.objects.all(), pk=self.frame)
-        if self.bounding_box is not None:
-            annotation.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
-        if self.keypoints is not None:
-            annotation.keypoints = [KeypointContainer(**keypoints.data) for keypoints in self.keypoints]
+        annotation.project = get_object_or_404(Project, pk=self.initial_data['project'])
+        annotation.category = get_object_or_404(Category, pk=self.initial_data['category'])
+        if 'image' in self.initial_data.keys():
+            annotation.image = get_object_or_404(Image, pk=self.initial_data['image'])
+        if 'frame' in self.initial_data.keys():
+            annotation.frame = get_object_or_404(Frame, pk=self.initial_data['frame'])
+        if 'bounding_box' in self.initial_data.keys():
+            serializer = self.cud_nested(validated_data['bounding_box'], BoundingBoxContainerSerializer)
+            annotation.bounding_box = [BoundingBoxContainer(**bounding_box.data) for bounding_box in serializer]
+        if 'keypoints' in self.initial_data.keys():
+            serializer = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
+            annotation.keypoints = [KeypointContainer(**keypoint.data) for keypoint in serializer]
         annotation.save()
         return annotation
 
     def update(self, instance, validated_data):
-        self.__set_annotation(validated_data)
-        instance.project = get_object_or_404(Project.objects.all(), pk=self.project)
-        instance.category = get_object_or_404(Category.objects.all(), pk=self.category)
-        if self.image is not None:
-            instance.image = get_object_or_404(Image.objects.all(), pk=self.image)
-        if self.frame is not None:
-            instance.frame = get_object_or_404(Frame.objects.all(), pk=self.frame)
-        if self.bounding_box is not None:
-            instance.bounding_box = [BoundingBoxContainer(**bbox.data) for bbox in self.bounding_box]
-        if self.keypoints is not None:
-            instance.keypoints = [KeypointContainer(**keypoints.data) for keypoints in self.keypoints]
+        instance.project = get_object_or_404(Project, pk=self.initial_data['project'])
+        instance.category = get_object_or_404(Category, pk=self.initial_data['category'])
+        if 'image' in self.initial_data.keys():
+            instance.image = get_object_or_404(Image, pk=self.initial_data['image'])
+        if 'frame' in self.initial_data.keys():
+            instance.frame = get_object_or_404(Frame, pk=self.initial_data['frame'])
+        if 'bounding_box' in self.initial_data.keys():
+            serializer = self.cud_nested(validated_data['bounding_box'], BoundingBoxContainerSerializer)
+            instance.bounding_box = [BoundingBoxContainer(**bounding_box.data) for bounding_box in serializer]
+        if 'keypoints' in self.initial_data.keys():
+            serializer = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
+            instance.keypoints = [KeypointContainer(**keypoint.data) for keypoint in serializer]
         instance.save()
-        return instance
 
     class Meta:
         model = Annotation
