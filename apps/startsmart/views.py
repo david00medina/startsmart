@@ -243,14 +243,22 @@ class AnnotationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        if 'id' in self.request.GET.keys() and 'project' in self.request.GET.keys():
+        if 'id' in self.request.GET.keys() and 'project' in self.request.GET.keys()\
+                and 'image' in self.request.GET.keys() \
+                and 'frame' in self.request.GET.keys():
             return self.queryset.filter(Q(id__exact=self.request.GET.get("id")))\
-                .filter(project__id=self.request.GET.get("project"))
+                .filter(project__id=self.request.GET.get("project"))\
+                .filter(image__id=self.request.GET.get("image"))\
+                .filter(frame__id=self.request.GET.get("frame"))
         if 'id' in self.request.GET.keys():
             return self.queryset.filter(Q(id=self.request.GET.get("id")))
         if 'project' in self.request.GET.keys():
             query = Annotation.objects.filter(Q(project__exact=self.request.GET.get('project')))
             return query
+        if 'image' in self.request.GET.keys():
+            return self.queryset.filter(Q(image__exact=self.request.GET.get('image')))
+        if 'frame' in self.request.GET.keys():
+            return self.queryset.filter(Q(frame__exact=self.request.GET.get('frame')))
 
     def retrieve(self, request, *args, **kwargs):
         serializer = self.serializer_class(get_object_or_404(Annotation, pk=kwargs['pk']), data=request.data, context={'request': request})

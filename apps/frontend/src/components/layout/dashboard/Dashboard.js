@@ -5,6 +5,7 @@ import styles from '../../../../static/css/layout/dashboard/vertical-toolbar.mod
 import TopToolbar from "./topbar/TopToolbar";
 import ProgressBar from "../utils/ProgressBar";
 import VerticalToolbar from "./VerticalToolbar";
+import Canvas from "./canvas/Canvas";
 
 class Dashboard extends Component {
     constructor(props) {
@@ -12,7 +13,8 @@ class Dashboard extends Component {
         this.state = {
             isLoaded: false,
             progress: 50,
-            items: []
+            items: [],
+            landmarks: []
         }
     }
 
@@ -40,22 +42,28 @@ class Dashboard extends Component {
                 </div>
             )
         } else {
-            let item = items[8].uri;
+            let item = items[8];
 
             return (
-                <div id="dashboard" className="container-fluid">
-                    <TopToolbar item={item} />
-                    <div className="row row-cols-3">
-                        <div className={'col-auto ' + styles['vertical-toolbar']}>
-                            <VerticalToolbar />
-                        </div>
-                        <div className="col-auto">
-                            <div className="container-fluid">
-                                <img src={item} />
+                <div id="dashboard">
+                    <TopToolbar item={item.uri} />
+                    <div>
+                        <div className="row">
+
+                            <div id="left-section" className="pl-2">
+                                <VerticalToolbar />
                             </div>
-                        </div>
-                        <div className="col-auto">
-                            Aqui va algo
+
+                            <div id="middle-section" className="col-9 align-content-center">
+                                <div id="canvas">
+                                    <Canvas image={item} />
+                                </div>
+                            </div>
+
+                            <div id="right-section" className="col-2">
+                                <p>Hola amigo como estas? bien?</p>
+                            </div>
+
                         </div>
                     </div>
                 </div>
