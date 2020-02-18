@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import NavigationTool from "./NavigationTool";
 
-import styles from '../../../../../static/css/layout/dashboard/topbar/topbar.module.css'
+import styles from '../../../../../../static/css/layout/dashboard/topbar/topbar.module.css'
 
 class TopToolbar extends Component {
     constructor(props) {

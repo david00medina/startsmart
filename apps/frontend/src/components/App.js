@@ -1,30 +1,48 @@
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
-import React, { Component, Fragment, Suspense, lazy } from 'react';
-import ReactDOM from "react-dom";
+import React, { Component } from 'react';
+import { Router, Route, Switch } from "react-router-dom";
+import { createBrowserHistory } from "history";
+import {Provider} from "mobx-react";
 
-import NavBar from "./layout/navbar/NavBar";
-import Home from "./layout/Home";
-import Project from "./layout/Project";
-import Dataset from "./layout/Dataset";
-import Annotator from "./layout/Annotator";
-import NotFound from "./layout/NotFound";
+import NavBar from "./views/navbar/NavBar";
+import stores from "./stores";
+
+
+const history = createBrowserHistory();
 
 class App extends Component {
     render() {
+        const {projectCollection, datasetCollection, libraryCollection} = stores.collections;
+        const {imageModel, videoModel} = stores.models;
         return (
-            <Router>
-                <NavBar />
-                <Switch>
-                    <Route exact path="/" component={Home} />
-                    <Route exact path="/projects" component={Project} />
-                    <Route exact path="/datasets" component={Dataset} />
-                    <Route exact path="/annotator" component={Annotator} />
-                    <Route exact path="/404" component={NotFound} />
-                    <Redirect to="/404" />
-                </Switch>
-            </Router>
+            <Provider
+                projectCollection={projectCollection}
+                datasetCollection={datasetCollection}
+                libraryCollection={libraryCollection}
+                imageModel={imageModel}
+                videoModel={videoModel}
+            >
+                <Router history={history}>
+                    <NavBar />
+                    <Switch>
+                        {this.props.routes.map((route, i) => (
+                            <RouteWithSubroutes key={i} {...route} />
+                        ))}
+                    </Switch>
+                </Router>
+            </Provider>
         );
     }
 }
 
-ReactDOM.render(<App />, document.getElementById('startsmart'));
+function RouteWithSubroutes(route) {
+    return (
+        <Route
+            path={route.path}
+            render={props => (
+                <route.component {...props} routes={route.routes} />
+            )}
+        />
+    );
+}
+
+export default App;

@@ -240,7 +240,7 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
     )
     dataset = serializers.HyperlinkedRelatedField(
         read_only=True,
-        view_name='roi-detail'
+        view_name='dataset-detail'
     )
     license = serializers.HyperlinkedRelatedField(
         read_only=True,
@@ -259,9 +259,9 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         image = Image()
         image.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
-        if 'license' in self.initial_data:
+        if 'license' in self.initial_data and self.initial_data['license'] != 'null':
             image.license = get_object_or_404(License, pk=self.initial_data['license'])
-        if 'roi' in self.initial_data:
+        if 'roi' in self.initial_data and self.initial_data['roi'] != 'null':
             image.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
         image.uri = validated_data['uri']
         image.save()
@@ -276,11 +276,11 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
 
     def update(self, instance, validated_data):
         instance.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
-        if 'license' in self.initial_data:
+        if 'license' in self.initial_data and self.initial_data['license'] != 'null':
             instance.license = get_object_or_404(License, pk=self.initial_data['license'])
-        if 'roi' in self.initial_data:
+        if 'roi' in self.initial_data and self.initial_data['roi'] != 'null':
             instance.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
-        if 'uri' in self.validated_data:
+        if 'uri' in self.validated_data and self.initial_data['uri'] != 'null':
             instance.uri = validated_data['uri']
         instance.save()
         cap = cv.VideoCapture('http://' + self.context['request'].get_host() + instance.uri.url)
@@ -316,7 +316,7 @@ class VideoSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         video = Video()
         video.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
-        if 'license' in self.initial_data:
+        if 'license' in self.initial_data and self.initial_data['license'] != 'null':
             video.license = get_object_or_404(License, pk=self.initial_data['license'])
         video.uri = validated_data['uri']
         video.save()
@@ -327,9 +327,9 @@ class VideoSerializer(serializers.HyperlinkedModelSerializer):
 
     def update(self, instance, validated_data):
         instance.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
-        if 'license' in self.initial_data:
+        if 'license' in self.initial_data and self.initial_data['license'] != 'null':
             instance.license = get_object_or_404(License, pk=self.initial_data['license'])
-        if 'uri' in self.validated_data:
+        if 'uri' in self.validated_data and self.initial_data['uri'] != 'null':
             instance.uri = validated_data['uri']
         instance.save()
         cVideo = cv.VideoCapture('http://' + self.context['request'].get_host() + instance.uri.url)
@@ -495,4 +495,10 @@ class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixi
 
     class Meta:
         model = Annotation
+        fields = '__all__'
+
+
+class LibrarySerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Library
         fields = '__all__'

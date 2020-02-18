@@ -13,5 +13,6 @@ router.register('frame', FrameViewSet, 'frame')
 router.register('project', ProjectViewSet, 'project')
 router.register('dataset', DatasetViewSet, 'dataset')
 router.register('annotation', AnnotationViewSet, 'annotation')
+router.register('library', LibraryViewSet, 'library')
 
 urlpatterns = router.urls

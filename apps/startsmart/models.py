@@ -194,3 +194,7 @@ class Annotation(models.Model):
     bounding_box = models.ArrayModelField(model_container=BoundingBoxContainer,
                                           model_form_class=BoundingBoxContainerForm,
                                           null=True)
+
+
+class Library(models.Model):
+    name = models.TextField()

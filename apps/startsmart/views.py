@@ -9,7 +9,6 @@ from .models import *
 import io
 
 
-
 class TemplateViewSet(viewsets.ModelViewSet):
     queryset = Template.objects.all()
     serializer_class = TemplateSerializer
@@ -101,8 +100,22 @@ class ImageViewSet(viewsets.ModelViewSet):
         permissions.AllowAny
     ]
 
+    def get_queryset(self):
+        query_params = self.request.query_params
+        dataset = query_params.get('dataset')
+
+        if dataset is not None:
+            datasetParam = int(dataset)
+
+        if dataset is not None:
+            queryset = self.queryset.filter(dataset_id__exact=datasetParam)
+            return queryset
+
     def list(self, request, *args, **kwargs):
-        serializer = self.serializer_class(self.queryset, context={'request': request}, many=True)
+        if self.request.query_params:
+            serializer = self.serializer_class(self.get_queryset(), context={'request': request}, many=True)
+        else:
+            serializer = self.serializer_class(self.queryset, context={'request': request}, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
@@ -131,16 +144,25 @@ class VideoViewSet(viewsets.ModelViewSet):
         permissions.AllowAny
     ]
 
+    def get_queryset(self):
+        query_params = self.request.query_params
+        dataset = query_params.get('dataset')
+
+        if dataset is not None:
+            datasetParam = int(dataset)
+
+        if dataset is not None:
+            queryset = self.queryset.filter(dataset_id__exact=datasetParam)
+            return queryset
+
     def list(self, request, *args, **kwargs):
-        serializer = self.serializer_class(self.queryset, context={'request': request}, many=True)
+        if self.request.query_params:
+            serializer = self.serializer_class(self.get_queryset(), context={'request': request}, many=True)
+        else:
+            serializer = self.serializer_class(self.queryset, context={'request': request}, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
-        stream = io.BytesIO(request.data['json'].encode())
-        json = JSONParser().parse(stream)
-        request.data.pop('json')
-        request.data['dataset'] = json['dataset']
-        request.data['license'] = json['license']
         serializer = self.serializer_class(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
@@ -211,8 +233,32 @@ class DatasetViewSet(viewsets.ModelViewSet):
         permissions.AllowAny
     ]
 
+    def get_queryset(self):
+        if 'id' in self.request.GET.keys() \
+                and 'project' in self.request.GET.keys() \
+                and 'name' in self.request.GET.keys():
+            return self.queryset.filter(Q(id__exact=self.request.GET.get("id")))\
+                .filter(Q(project_id__exact=self.request.GET.get("project")))\
+                .filter(Q(name__icontains=self.request.GET.get("name")))
+        if 'id' in self.request.GET.keys():
+            return self.queryset.filter(Q(id__exact=self.request.GET.get("id")))
+        if 'project' in self.request.GET.keys():
+            return self.queryset.filter(Q(project_id__exact=self.request.GET.get("project")))
+        if 'name' in self.request.GET.keys():
+            return self.queryset.filter(Q(name__icontains=self.request.GET.get("name")))
+
     def list(self, request, *args, **kwargs):
+        if 'id' in self.request.GET.keys() \
+                or 'project' in self.request.GET.keys() \
+                or 'name' in self.request.GET.keys():
+            serializer = self.serializer_class(self.get_queryset(), context={'request': request}, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
         serializer = self.serializer_class(self.queryset, context={'request': request}, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request, *args, **kwargs):
+        serializer = self.serializer_class(get_object_or_404(Dataset, pk=kwargs['pk']), context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
@@ -285,3 +331,11 @@ class AnnotationViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LibraryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Library.objects.all()
+    serializer_class = LibrarySerializer
+    permission_classes = [
+        permissions.AllowAny
+    ]

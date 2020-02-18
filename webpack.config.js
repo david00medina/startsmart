@@ -2,14 +2,34 @@ module.exports = {
 	devServer: {
 		historyApiFallback: true
 	},
+	resolve: {
+		modules:  [
+			'node_modules',
+			'apps/frontend/src',
+			'apps/frontend/static',
+			'apps/frontend/templates',
+			'apps/frontend/lib'
+		]
+	},
 	module: {
 		rules: [
 			{
-				test: /\.js$/,
+				test: /\.(js|jsx)$/,
 				exclude: /node_modules/,
 				use: {
-					loader: "babel-loader"
-				}
+					loader: "babel-loader",
+				},
+			},
+			{
+				test: /\.s[ac]ss$/i,
+				use: [
+				  // Creates `style` nodes from JS strings
+				  'style-loader',
+				  // Translates CSS into CommonJS
+				  'css-loader',
+				  // Compiles Sass to CSS
+				  'sass-loader',
+				],
 			},
 			{
 				test: /\.css?$/i,

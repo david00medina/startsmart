@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 
-import css from "../../../../../static/css/annotator.module.css";
+import css from "../../../../../../static/css/annotator.module.css";
 
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import styles from "../../../../../static/css/layout/dashboard/topbar/topbar.module.css";
+import styles from "../../../../../../static/css/layout/dashboard/topbar/topbar.module.css";
 
 class NavigationTool extends Component {
     constructor(props) {
