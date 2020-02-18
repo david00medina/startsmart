@@ -1,0 +1,14 @@
+- model: startsmart.library
+  pk: 1
+  fields:
+    name: Openpose
+
+- model: startsmart.library
+  pk: 2
+  fields:
+    name: wrnchAI
+
+- model: startsmart.library
+  pk: 3
+  fields:
+    name: DLIB
