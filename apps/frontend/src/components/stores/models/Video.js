@@ -18,14 +18,15 @@ class Video {
             this.data = await response.json();
         }
 
-        return response.json();
+        return this.data;
     }
 
     @action async add(data) {
         const formData = new FormData();
-        formData.append('uri', data.uri);
         formData.append('dataset', data.dataset);
         formData.append('license', data.license);
+        formData.append('filename', data.filename);
+        formData.append('uri', data.uri);
         const response = API.post_file(this.path, formData);
         response.onload = function() {
             if (response.status !== 201) {

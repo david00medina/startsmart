@@ -9,9 +9,9 @@ class Image {
     @observable data = [];
     @observable isLoading = false;
 
-    @action async fetch(datasetID) {
+    @action async fetch(id) {
         let path = this.path + this.query;
-        const response = await API.get(path.replace("%s", datasetID));
+        const response = await API.get(path.replace("%s", id));
         const status = await response.status;
 
         if (status === 200) {
@@ -22,9 +22,10 @@ class Image {
 
     @action async add(data) {
         const formData = new FormData();
-        formData.append('uri', data.uri);
         formData.append('dataset', data.dataset);
         formData.append('license', data.license);
+        formData.append('filename', data.filename);
+        formData.append('uri', data.uri);
         formData.append('roi', data.roi);
         const response = API.post_file(this.path, formData);
         response.onload = function() {

@@ -263,6 +263,7 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
             image.license = get_object_or_404(License, pk=self.initial_data['license'])
         if 'roi' in self.initial_data and self.initial_data['roi'] != 'null':
             image.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
+        image.filename = validated_data['filename']
         image.uri = validated_data['uri']
         image.save()
         cap = cv.VideoCapture('http://' + self.context['request'].get_host() + image.uri.url)
@@ -280,6 +281,8 @@ class ImageSerializer(serializers.HyperlinkedModelSerializer):
             instance.license = get_object_or_404(License, pk=self.initial_data['license'])
         if 'roi' in self.initial_data and self.initial_data['roi'] != 'null':
             instance.roi = get_object_or_404(RegionOfInterest, pk=self.initial_data['roi'])
+        if 'filename' in self.validated_data and self.initial_data['filename'] != 'null':
+            instance.filename = validated_data['filename']
         if 'uri' in self.validated_data and self.initial_data['uri'] != 'null':
             instance.uri = validated_data['uri']
         instance.save()
@@ -318,6 +321,7 @@ class VideoSerializer(serializers.HyperlinkedModelSerializer):
         video.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
         if 'license' in self.initial_data and self.initial_data['license'] != 'null':
             video.license = get_object_or_404(License, pk=self.initial_data['license'])
+        video.filename = validated_data['filename']
         video.uri = validated_data['uri']
         video.save()
         cVideo = cv.VideoCapture('http://' + self.context['request'].get_host() + video.uri.url)
@@ -329,6 +333,8 @@ class VideoSerializer(serializers.HyperlinkedModelSerializer):
         instance.dataset = get_object_or_404(Dataset, pk=self.initial_data['dataset'])
         if 'license' in self.initial_data and self.initial_data['license'] != 'null':
             instance.license = get_object_or_404(License, pk=self.initial_data['license'])
+        if 'filename' in self.validated_data and self.initial_data['filename'] != 'null':
+            instance.filename = validated_data['filename']
         if 'uri' in self.validated_data and self.initial_data['uri'] != 'null':
             instance.uri = validated_data['uri']
         instance.save()

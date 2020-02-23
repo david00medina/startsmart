@@ -1,3 +1,4 @@
+from django.urls import path
 from rest_framework import routers
 from .views import *
 
@@ -15,4 +16,8 @@ router.register('dataset', DatasetViewSet, 'dataset')
 router.register('annotation', AnnotationViewSet, 'annotation')
 router.register('library', LibraryViewSet, 'library')
 
-urlpatterns = router.urls
+urlpatterns = [
+    path('detect', detect, name='detect'),
+]
+
+urlpatterns += router.urls

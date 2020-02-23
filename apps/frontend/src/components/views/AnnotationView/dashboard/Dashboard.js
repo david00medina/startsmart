@@ -1,7 +1,5 @@
 import React, {Component} from 'react';
 
-import styles from '../../../../../static/css/layout/dashboard/vertical-toolbar.module.css'
-
 import TopToolbar from "./topbar/TopToolbar";
 import ProgressBar from "../../utils/ProgressBar";
 import VerticalToolbar from "./VerticalToolbar";

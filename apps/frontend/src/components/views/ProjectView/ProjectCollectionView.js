@@ -49,7 +49,6 @@ class ProjectCollectionView extends Component {
     };
 
     handlePopoverClick = () => {
-        console.log("POPOVER");
         const isPopoverOpened = !this.state.isPopoverOpen;
         this.setState({
             isPopoverOpened: isPopoverOpened
@@ -78,7 +77,6 @@ class ProjectCollectionView extends Component {
 
     handleCardClick = (e) => {
         e.stopPropagation();
-        console.log("CARD CLICK");
         this.setState({
             redirect: true,
             selected: API.retrievePathID(this.props.url)

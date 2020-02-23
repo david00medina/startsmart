@@ -1,20 +1,30 @@
 from datetime import datetime
 from djongo import models
 from django import forms
+import hashlib
 import uuid
 import os
 
 
 def upload(instance, filename):
+    md5sum = instance.md5sum
+
     new_filename = '%s%s' % \
-               (uuid.uuid3(uuid.NAMESPACE_DNS, filename + datetime.now().__str__()),
+               (uuid.uuid3(uuid.NAMESPACE_DNS, md5sum),
                 os.path.splitext(filename)[-1])
+
     if isinstance(instance, Image):
-        return 'images/' + new_filename
+        path = 'images/' + new_filename
     elif isinstance(instance, Video):
-        return 'videos/' + new_filename
+        path = 'videos/' + new_filename
     elif isinstance(instance, Frame):
-        return 'frames/' + os.path.splitext(os.path.basename(instance.video.uri.name))[0] + '/' + new_filename
+        path = 'frames/' + os.path.splitext(os.path.basename(instance.video.uri.name))[0] + '/' + new_filename
+
+    full_path = 'media/' + path
+    if os.path.isfile(full_path):
+        os.remove(full_path)
+
+    return path
 
 
 
@@ -154,10 +164,21 @@ class Image(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True, default=None)
     roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, null=True, default=None)
+    filename = models.TextField()
+    md5sum = models.CharField(max_length=32, null=True)
     uri = models.ImageField(upload_to=upload, null=True)
     width = models.PositiveIntegerField(default=0)
     height = models.PositiveIntegerField(default=0)
     channels = models.PositiveIntegerField(default=0)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            md5 = hashlib.md5()
+            for chunk in self.uri.chunks():
+                md5.update(chunk)
+
+            self.md5sum = md5.hexdigest()
+        super(Image, self).save(*args, **kwargs)
 
 
 class Video(models.Model):
@@ -165,8 +186,19 @@ class Video(models.Model):
     date_modified = models.DateTimeField(auto_now=True)
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True)
+    filename = models.TextField()
+    md5sum = models.CharField(max_length=32, null=True)
     uri = models.FileField(upload_to=upload, null=True)
     total_frames = models.PositiveIntegerField(null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            md5 = hashlib.md5()
+            for chunk in self.uri.chunks():
+                md5.update(chunk)
+
+            self.md5sum = md5.hexdigest()
+        super(Video, self).save(*args, **kwargs)
 
 
 class Frame(models.Model):

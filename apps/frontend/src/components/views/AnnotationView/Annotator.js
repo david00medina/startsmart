@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import Dashboard from "./dashboard/Dashboard";
 import {inject, observer} from "mobx-react";
+import API from "api";
 
 
 @inject('imageModel', 'videoModel')
@@ -13,6 +14,7 @@ class Annotator extends Component {
         this.state = {
             isLoaded: false,
             progress: 0,
+            type: null,
             items: [],
             landmarks: [],
             index: 0
@@ -22,23 +24,53 @@ class Annotator extends Component {
     componentDidMount() {
         this.props.imageModel.fetch(this.datasetID)
             .then((value) => {
-                this.setState({
-                    items: value,
-                    progress: 50,
-                });
+                if (value.length !== 0) {
+                    this.setState({
+                        type: 'image',
+                        items: value,
+                        progress: 50,
+                    });
+                }
             }).finally(() => {
-                this.setState({
-                    isLoaded: true,
-                    progress: 100,
-                });
+                if (this.state.items.length !== 0) {
+                    this.setState({
+                        isLoaded: true,
+                        progress: 100,
+                    });
+                }
             });
+
+        this.props.videoModel.fetch(this.datasetID)
+            .then((value) => {
+                if (value.length !== 0) {
+                    this.setState({
+                        type: 'video',
+                        items: value,
+                        progress: 50,
+                    });
+                }
+            }).finally(() => {
+                if (this.state.items.length !== 0) {
+                    this.setState({
+                        isLoaded: true,
+                        progress: 100,
+                    });
+                }
+        });
     }
 
     render() {
+        if (this.state.type !== null) {
+            API.post('detect', {
+                type: this.state.type,
+            });
+        }
+
         return (
             <div id="annotator">
                 <Dashboard
                     items={this.state.items}
+                    type={this.state.type}
                     isLoaded={this.state.isLoaded}
                     progress={this.state.progress}
                     index={this.state.index}

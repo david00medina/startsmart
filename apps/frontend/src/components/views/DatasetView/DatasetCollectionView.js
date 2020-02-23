@@ -43,7 +43,6 @@ class DatasetCollectionView extends Component {
     };
 
     doAdd = () => {
-        console.log(this.state.file.type);
         this.props.datasetCollection.add({
             name: this.bp3.nameRef.current.value,
             project: this.projectID,
@@ -51,16 +50,18 @@ class DatasetCollectionView extends Component {
 
             if (this.state.file && this.state.file.type.match('image.*')) {
                 this.props.imageModel.add({
-                    uri: this.state.file,
                     dataset: this.props.datasetCollection.retrieveID(res.url),
                     license: null,
+                    filename: this.state.file.name,
+                    uri: this.state.file,
                     roi: null
                 });
             } else if (this.state.file && this.state.file.type.match('video.*')) {
                 this.props.videoModel.add({
-                    uri: this.state.file,
                     dataset: this.props.datasetCollection.retrieveID(res.url),
                     license: null,
+                    filename: this.state.file.name,
+                    uri: this.state.file
                 })
             }
         });
@@ -76,6 +77,7 @@ class DatasetCollectionView extends Component {
 
     render() {
         const datasets = this.props.datasetCollection.all;
+
         return (
             <div id="dataset-collection" className="container-fluid m-3" style={{"height": document.documentElement.clientHeight*0.7}}>
                 <h1 className="text-center">Datasets</h1>

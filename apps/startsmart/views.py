@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework import viewsets, permissions, status
 from rest_framework.parsers import JSONParser
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from django.db.models import Q
 from .serializers import *
@@ -106,8 +106,6 @@ class ImageViewSet(viewsets.ModelViewSet):
 
         if dataset is not None:
             datasetParam = int(dataset)
-
-        if dataset is not None:
             queryset = self.queryset.filter(dataset_id__exact=datasetParam)
             return queryset
 
@@ -150,8 +148,6 @@ class VideoViewSet(viewsets.ModelViewSet):
 
         if dataset is not None:
             datasetParam = int(dataset)
-
-        if dataset is not None:
             queryset = self.queryset.filter(dataset_id__exact=datasetParam)
             return queryset
 
@@ -339,3 +335,24 @@ class LibraryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [
         permissions.AllowAny
     ]
+
+
+@api_view(['POST'])
+def detect(request):
+    if request.method == 'POST':
+        if 'type' in request.data.keys() and request.data['type'] is not None:
+            type = request.data['type']
+        else:
+            return Response({"detection": "failed", "message": "File type not specified"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if type == 'image':
+            print("RUN IMAGE STUFF")
+        elif type == 'video':
+            print('RUN VIDEO STUFF')
+        else:
+            return Response({"detection": "failed", "message": "Wrong file type"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"detection": "ok"},
+                        status=status.HTTP_200_OK)
