@@ -1,4 +1,3 @@
-from datetime import datetime
 from djongo import models
 from django import forms
 import hashlib
@@ -7,10 +6,12 @@ import os
 
 
 def upload(instance, filename):
+    dataset_id = instance.dataset.pk
     md5sum = instance.md5sum
 
-    new_filename = '%s%s' % \
-               (uuid.uuid3(uuid.NAMESPACE_DNS, md5sum),
+    new_filename = '%s/%s%s' % \
+               (dataset_id,
+                uuid.uuid3(uuid.NAMESPACE_DNS, md5sum),
                 os.path.splitext(filename)[-1])
 
     if isinstance(instance, Image):
@@ -216,8 +217,8 @@ class Frame(models.Model):
 class Annotation(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, default=None)
     category = models.ForeignKey('Category', on_delete=models.CASCADE, default=None)
+    predictor = models.TextField()
     image = models.ForeignKey('Image', on_delete=models.CASCADE, default=None)
     frame = models.ForeignKey('Frame', on_delete=models.CASCADE, default=None)
     keypoints = models.ArrayModelField(model_container=KeypointContainer,

@@ -1,6 +1,5 @@
 from apps.startsmart.annotator.tools.FrameHandler import FrameHandler
 from django.shortcuts import get_object_or_404, get_list_or_404
-from django.db.models.query import QuerySet
 from rest_framework import serializers
 from typing import List, Dict, Type
 from .models import *
@@ -445,10 +444,6 @@ class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixi
         view_name='dataset-detail',
         lookup_field='pk'
     )
-    project = serializers.HyperlinkedRelatedField(
-        read_only=True,
-        view_name='project-detail'
-    )
     category = serializers.HyperlinkedRelatedField(
         read_only=True,
         view_name='category-detail'
@@ -469,7 +464,6 @@ class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixi
 
     def create(self, validated_data):
         annotation = Annotation()
-        annotation.project = get_object_or_404(Project, pk=self.initial_data['project'])
         annotation.category = get_object_or_404(Category, pk=self.initial_data['category'])
         if 'image' in self.initial_data.keys():
             annotation.image = get_object_or_404(Image, pk=self.initial_data['image'])
@@ -485,7 +479,6 @@ class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixi
         return annotation
 
     def update(self, instance, validated_data):
-        instance.project = get_object_or_404(Project, pk=self.initial_data['project'])
         instance.category = get_object_or_404(Category, pk=self.initial_data['category'])
         if 'image' in self.initial_data.keys():
             instance.image = get_object_or_404(Image, pk=self.initial_data['image'])

@@ -1,9 +1,13 @@
+from urllib.parse import urlparse
+
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework import viewsets, permissions, status
 from rest_framework.parsers import JSONParser
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from django.db.models import Q
+
+from .annotator.predictor.OpenposePredictor import Openpose
 from .serializers import *
 from .models import *
 import io
@@ -285,18 +289,14 @@ class AnnotationViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        if 'id' in self.request.GET.keys() and 'project' in self.request.GET.keys()\
+        if 'id' in self.request.GET.keys() \
                 and 'image' in self.request.GET.keys() \
                 and 'frame' in self.request.GET.keys():
             return self.queryset.filter(Q(id__exact=self.request.GET.get("id")))\
-                .filter(project__id=self.request.GET.get("project"))\
                 .filter(image__id=self.request.GET.get("image"))\
                 .filter(frame__id=self.request.GET.get("frame"))
         if 'id' in self.request.GET.keys():
             return self.queryset.filter(Q(id=self.request.GET.get("id")))
-        if 'project' in self.request.GET.keys():
-            query = Annotation.objects.filter(Q(project__exact=self.request.GET.get('project')))
-            return query
         if 'image' in self.request.GET.keys():
             return self.queryset.filter(Q(image__exact=self.request.GET.get('image')))
         if 'frame' in self.request.GET.keys():
@@ -339,17 +339,36 @@ class LibraryViewSet(viewsets.ReadOnlyModelViewSet):
 
 @api_view(['POST'])
 def detect(request):
+    OUT_PATH = 'detections'
+
     if request.method == 'POST':
-        if 'type' in request.data.keys() and request.data['type'] is not None:
+        if 'type' in request.data.keys() and request.data['type'] is not None \
+                and 'item' in request.data.keys() and request.data['item'] is not None:
             type = request.data['type']
+            item = request.data['item'][0]
         else:
             return Response({"detection": "failed", "message": "File type not specified"},
                             status=status.HTTP_400_BAD_REQUEST)
 
         if type == 'image':
-            print("RUN IMAGE STUFF")
+            url = urlparse(item['uri'])
+            op = Openpose(os.path.dirname(url.path[1:]), OUT_PATH, mode='image')
+            params = {
+                'write_json': op.project.project_json_path,
+                'model_folder': 'models',
+                'render_pose': 2,
+                'body': 1,
+                'face': None,
+                'face_detector': None,
+                'face_render': None,
+                'hand': None,
+                'hand_detector': None,
+                'hand_render': None
+            }
+            op.setup(**params)
+            op.infer()
         elif type == 'video':
-            print('RUN VIDEO STUFF')
+            print(item)
         else:
             return Response({"detection": "failed", "message": "Wrong file type"},
                             status=status.HTTP_400_BAD_REQUEST)

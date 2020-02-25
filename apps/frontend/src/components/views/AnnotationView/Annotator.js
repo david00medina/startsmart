@@ -61,8 +61,17 @@ class Annotator extends Component {
 
     render() {
         if (this.state.type !== null) {
+
+            let item;
+            if (this.state.type === 'image') {
+                item = this.props.imageModel.data;
+            } else if (this.state.type === 'video') {
+                item = this.props.videoModel.data;
+            }
+
             API.post('detect', {
                 type: this.state.type,
+                item: item,
             });
         }
 

@@ -167,6 +167,12 @@ class Openpose(AbstractPredictor):
     def __image_processing(self, title):
         for i in range(self.image_handler.total_images):
             self.image_handler.select_image(i)
+
+            filename = f'{self.__predictor}_{os.path.splitext(self.image_handler.filename)[0]}'
+
+            if os.path.isfile(self.project.project_json_path + filename + '_keypoints.json'):
+                continue
+
             self.image_handler.read()
             datum, handler = self.__initializer('')
 
@@ -174,7 +180,7 @@ class Openpose(AbstractPredictor):
                                                           tuple(self.image_handler.image.shape[:2]),
                                                           self.net_size)
             datum.id = i
-            datum.name = f'{self.__predictor}_{os.path.splitext(self.image_handler.filename)[0]}'
+            datum.name = filename
 
             self.__launch_job(title, datum, handler)
 
