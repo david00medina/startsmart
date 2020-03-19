@@ -11,15 +11,19 @@ import time
 import os
 
 
-class Openpose(AbstractPredictor):
+class OpenposePredictor(AbstractPredictor):
     __predictor = 'openpose'
 
-    def __init__(self, input, output, net_size=(800, 600), params=None, mode='video', draw_params=None, max_coco=None):
+    def __init__(self, input, output, net_size=(800, 600),
+                 params=None, mode='video', draw_params=None,
+                 max_coco=None):
         super().__init__(ProjectOrganizer(output, self.__predictor), net_size)
+
         if params is None:
             params = dict()
 
         self.__params = params
+        self.__params['write_json'] = self.project.project_json_path
         self.__draw_params = draw_params
         self.__max_coco_images = max_coco
 
@@ -213,6 +217,10 @@ class Openpose(AbstractPredictor):
 
                 datum.id = j
                 datum.name = f'{self.__predictor}_{os.path.splitext(k)[0]}_{datum.id:010}'
+
+                if os.path.isfile(self.project.project_json_path + os.path.splitext(k)[0] + '/'
+                                  + datum.name + '_keypoints.json'):
+                    continue
 
                 self.__launch_job(k, datum, handler)
 

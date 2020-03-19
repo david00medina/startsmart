@@ -11,13 +11,14 @@ const history = createBrowserHistory();
 
 class App extends Component {
     render() {
-        const {projectCollection, datasetCollection, libraryCollection} = stores.collections;
+        const {projectCollection, datasetCollection, libraryCollection, annotationCollection} = stores.collections;
         const {imageModel, videoModel} = stores.models;
         return (
             <Provider
                 projectCollection={projectCollection}
                 datasetCollection={datasetCollection}
                 libraryCollection={libraryCollection}
+                annotationCollection={annotationCollection}
                 imageModel={imageModel}
                 videoModel={videoModel}
             >

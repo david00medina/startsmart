@@ -14,7 +14,7 @@ class ProjectOrganizer:
 
     @property
     def project_root_path(self):
-        return self.__path + '/' + self.__predictor + '_' + self.__today + '/'
+        return self.__path + '/' + self.__predictor + '/'
 
     @property
     def project_json_path(self):
@@ -34,7 +34,7 @@ class ProjectOrganizer:
 
     def build_project_dir(self):
         if not os.path.exists(self.project_root_path):
-            os.mkdir(self.project_root_path)
+            os.makedirs(self.project_root_path)
 
         if not os.path.exists(self.project_json_path):
             os.mkdir(self.project_json_path)

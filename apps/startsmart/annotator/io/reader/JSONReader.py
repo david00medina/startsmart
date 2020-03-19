@@ -1,16 +1,22 @@
 from apps.startsmart.annotator.io.reader.AbstractReader import AbstractReader
 import json
+import os
 
 
 class JSONReader(AbstractReader):
     def __init__(self, path):
+        self.__path = path
+        self.filename = path
         self.__file = None
         self.open(path)
-        self.__data = None
 
     @property
-    def data(self):
-        return self.__data
+    def filename(self):
+        return self.__filename
+
+    @filename.setter
+    def filename(self, path):
+        self.__filename = os.path.basename(path)
 
     def open(self, path):
         if self.__file is not None and not self.__file.closed:

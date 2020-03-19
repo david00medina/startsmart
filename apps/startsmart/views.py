@@ -3,14 +3,17 @@ from urllib.parse import urlparse
 from django.shortcuts import get_object_or_404, get_list_or_404
 from rest_framework import viewsets, permissions, status
 from rest_framework.parsers import JSONParser
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Q
+from django.core import serializers
 
-from .annotator.predictor.OpenposePredictor import Openpose
-from .serializers import *
 from .models import *
 import io
+
+from .serializers import TemplateSerializer, ModelSerializer, CategorySerializer, RegionOfInterestSerializer, \
+    LicenseSerializer, VideoSerializer, FrameSerializer, ProjectSerializer, DatasetSerializer, AnnotationSerializer, \
+    LibrarySerializer, PredictorSerializer, ImageSerializer
 
 
 class TemplateViewSet(viewsets.ModelViewSet):
@@ -310,14 +313,62 @@ class AnnotationViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def create(self, request, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            serializer = self.serializer_class(serializer.instance, data=request.data, context={'request': request})
-            if serializer.is_valid():
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        mode = 'image' if 'image' in request.data.keys() is not None else 'video'
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        response = list()
+        for id in request.data[mode]:
+            for i in range(request.data['index']):
+                if mode == 'image':
+                    file_instance = get_object_or_404(Image, pk=id)
+                    existing = list(self.queryset.filter(image__md5sum__iexact=file_instance.md5sum))
+                else:
+                    file_instance = get_object_or_404(Video, pk=id)
+                    existing = list(self.queryset.filter(frame__video__md5sum__iexact=file_instance.md5sum)
+                                    .filter(frame__frame_no=i))
+
+
+                if len(existing) > 0:
+                    for object in existing:
+                        serializer = self.serializer_class(object, data=request.data,
+                                                           context={'request': request})
+                        if serializer.is_valid():
+                            response.append(serializer.data)
+
+                    continue
+
+                out_path = '/' + request.data['project'] + '/' + request.data['dataset']
+                predictor = PredictorSerializer(file_instance, out_path, request.data['predictor'], mode,
+                                                (request.data['width'], request.data['height']),
+                                                model_folder='models',
+                                                render_pose=2, body=1)
+
+
+                results = predictor.get_results(i)
+
+
+                for result in results:
+                    data = request.data.copy()
+                    data['result'] = result
+
+                    data[mode] = id
+
+                    existing_frame = list(self.queryset.filter(frame__video__pk=data['video']) \
+                        .filter(frame__frame_no=i))
+
+                    if len(existing_frame) > 0:
+                        data['frame'] = existing_frame[0].frame
+
+                    serializer = self.serializer_class(data=data, context={'request': request})
+                    if serializer.is_valid():
+                        serializer.save()
+                        serializer = self.serializer_class(serializer.instance, data=data, context={'request': request})
+                        if not serializer.is_valid():
+                            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            response.append(serializer.data)
+
+
+        return Response(response, status=status.HTTP_201_CREATED)
 
     def update(self, request, pk=None, **kwargs):
         object = get_object_or_404(self.queryset, pk=pk)
@@ -337,41 +388,13 @@ class LibraryViewSet(viewsets.ReadOnlyModelViewSet):
     ]
 
 
-@api_view(['POST'])
-def detect(request):
-    OUT_PATH = 'detections'
-
-    if request.method == 'POST':
-        if 'type' in request.data.keys() and request.data['type'] is not None \
-                and 'item' in request.data.keys() and request.data['item'] is not None:
-            type = request.data['type']
-            item = request.data['item'][0]
+@api_view(['GET'])
+def get_frame(request):
+    if request.method == 'GET':
+        object = get_object_or_404(Video.objects.all(), pk=request.GET.get("video"))
+        serializer = VideoSerializer(object, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            img = serializer.get_frame(object, request.GET.get("frame_no"))
+            return Response({'image': img, 'result': 'ok'}, status=status.HTTP_200_OK)
         else:
-            return Response({"detection": "failed", "message": "File type not specified"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        if type == 'image':
-            url = urlparse(item['uri'])
-            op = Openpose(os.path.dirname(url.path[1:]), OUT_PATH, mode='image')
-            params = {
-                'write_json': op.project.project_json_path,
-                'model_folder': 'models',
-                'render_pose': 2,
-                'body': 1,
-                'face': None,
-                'face_detector': None,
-                'face_render': None,
-                'hand': None,
-                'hand_detector': None,
-                'hand_render': None
-            }
-            op.setup(**params)
-            op.infer()
-        elif type == 'video':
-            print(item)
-        else:
-            return Response({"detection": "failed", "message": "Wrong file type"},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        return Response({"detection": "ok"},
-                        status=status.HTTP_200_OK)
+            return Response({'result': 'fail'}, status=status.HTTP_400_BAD_REQUEST)

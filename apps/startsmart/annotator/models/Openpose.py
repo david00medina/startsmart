@@ -5,7 +5,16 @@ from apps.startsmart.models import Annotation, Category, Image, Frame, KeypointC
 
 class Openpose:
     def __init__(self):
+        self.__filename = None
         self.__annotation = Annotation()
+
+    @property
+    def filename(self):
+        return self.__filename
+
+    @filename.setter
+    def filename(self, filename):
+        self.__filename = filename
 
     @property
     def category(self):
@@ -36,45 +45,55 @@ class Openpose:
         return self.__annotation.frame
 
     @frame.setter
-    def frame(self, id):
-        self.__annotation.frame = get_object_or_404(Frame, pk=id)
+    def frame(self, frame):
+        self.__annotation.frame = frame
 
     @property
     def keypoints(self):
         return self.__annotation.keypoints
 
     @keypoints.setter
-    def keypoints(self, **kwargs):
-        keypoints = KeypointContainer()
-        for k, v in kwargs.items():
-            if k == 'name':
-                keypoints.name = v
-            elif k == 'dimension':
-                keypoints.dimension = v
-            elif k == 'data':
-                keypoints.data = v
-            elif k == 'confidence':
-                keypoints.confidence = v
+    def keypoints(self, values):
+        keypoint_container = list()
+        for value in values:
+            keypoints = KeypointContainer()
+            for k, v in value.items():
+                if k == 'name':
+                    keypoints.name = v
+                elif k == 'dimension':
+                    keypoints.dimension = v
+                elif k == 'data':
+                    keypoints.data = v
+                elif k == 'confidence':
+                    keypoints.confidence = v
+            keypoint_container.append(keypoints)
+
+        self.__annotation.keypoints = keypoint_container
 
     @property
     def bounding_box(self):
         return self.__annotation.bounding_box
 
     @bounding_box.setter
-    def bounding_box(self, **kwargs):
-        bounding_box = BoundingBoxContainer()
-        for k, v in kwargs.items():
-            if k == 'dimension':
-                bounding_box.dimension = v
-            elif k == 'min_x':
-                bounding_box.min_x = v
-            elif k == 'min_y':
-                bounding_box.min_y = v
-            elif k == 'min_z':
-                bounding_box.min_z = v
-            elif k == 'width':
-                bounding_box.width = v
-            elif k == 'height':
-                bounding_box.height = v
-            elif k == 'depth':
-                bounding_box.depth = v
+    def bounding_box(self, values):
+        bounding_box_container = list()
+        for value in values:
+            bounding_box = BoundingBoxContainer()
+            for k, v in value.items():
+                if k == 'dimension':
+                    bounding_box.dimension = v
+                elif k == 'min_x':
+                    bounding_box.min_x = v
+                elif k == 'min_y':
+                    bounding_box.min_y = v
+                elif k == 'min_z':
+                    bounding_box.min_z = v
+                elif k == 'width':
+                    bounding_box.width = v
+                elif k == 'height':
+                    bounding_box.height = v
+                elif k == 'depth':
+                    bounding_box.depth = v
+            bounding_box_container.append(bounding_box)
+
+        self.__annotation.bounding_box = bounding_box_container

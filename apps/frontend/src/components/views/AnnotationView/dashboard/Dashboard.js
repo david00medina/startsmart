@@ -14,10 +14,26 @@ class Dashboard extends Component {
                 </div>
             )
         } else {
-            let item = this.props.items[this.props.index];
+
+            let item;
+            let image;
+
+            if ('image' === this.props.type) {
+                item = this.props.items[this.props.index];
+                image = item.uri;
+            } else if ('video' === this.props.type) {
+                item = this.props.items[0];
+                image = item.uri;
+            }
+
             return (
                 <div id="dashboard">
-                    <TopToolbar item={item.uri} />
+                    <TopToolbar
+                        filename={item.filename}
+                        index={this.props.index}
+                        onClickPrevious={this.props.onClickPrevious}
+                        onClickNext={this.props.onClickNext}
+                    />
                     <div>
                         <div className="row">
 
@@ -27,7 +43,10 @@ class Dashboard extends Component {
 
                             <div id="middle-section" className="col-10 align-content-center">
                                 <div id="canvas">
-                                    <Canvas image={item} roi={[840, 220, 840, 240, 860, 240, 860, 260, 820, 260]} />
+                                    <Canvas
+                                        image={image}
+                                        roi={[840, 220, 840, 240, 860, 240, 860, 260, 820, 260]}
+                                    />
                                 </div>
                             </div>
 

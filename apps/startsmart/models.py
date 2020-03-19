@@ -165,12 +165,13 @@ class Image(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True, default=None)
     roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, null=True, default=None)
-    filename = models.TextField()
+    filename = models.TextField(null=True)
     md5sum = models.CharField(max_length=32, null=True)
     uri = models.ImageField(upload_to=upload, null=True)
     width = models.PositiveIntegerField(default=0)
     height = models.PositiveIntegerField(default=0)
     channels = models.PositiveIntegerField(default=0)
+    time_lapse = models.FloatField(default=0.0)
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -187,10 +188,14 @@ class Video(models.Model):
     date_modified = models.DateTimeField(auto_now=True)
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     license = models.ForeignKey(License, on_delete=models.SET_NULL, null=True)
-    filename = models.TextField()
+    filename = models.TextField(null=True)
     md5sum = models.CharField(max_length=32, null=True)
     uri = models.FileField(upload_to=upload, null=True)
     total_frames = models.PositiveIntegerField(null=True)
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    channels = models.PositiveIntegerField(default=0)
+    mean_time = models.FloatField(default=0.0)
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -207,18 +212,17 @@ class Frame(models.Model):
     date_modified = models.DateTimeField(auto_now=True)
     video = models.ForeignKey(Video, on_delete=models.CASCADE, blank=True)
     roi = models.ForeignKey(RegionOfInterest, on_delete=models.SET_NULL, blank=True, null=True, default=None)
-    frame_no = models.PositiveIntegerField()
     uri = models.ImageField(upload_to=upload, null=True)
-    width = models.PositiveIntegerField(default=0)
-    height = models.PositiveIntegerField(default=0)
-    channels = models.PositiveIntegerField(default=0)
+    frame_no = models.PositiveIntegerField()
+    time_lapse = models.FloatField(default=0.0)
 
 
 class Annotation(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
     category = models.ForeignKey('Category', on_delete=models.CASCADE, default=None)
-    predictor = models.TextField()
+    entity_id = models.PositiveIntegerField(default=None)
+    predictor = models.TextField(default=None)
     image = models.ForeignKey('Image', on_delete=models.CASCADE, default=None)
     frame = models.ForeignKey('Frame', on_delete=models.CASCADE, default=None)
     keypoints = models.ArrayModelField(model_container=KeypointContainer,

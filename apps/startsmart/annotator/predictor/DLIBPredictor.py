@@ -9,7 +9,7 @@ import time
 import os
 
 
-class DLIB(AbstractPredictor):
+class DLIBPredictor(AbstractPredictor):
     __predictor = 'DLIB'
 
     def __init__(self, in_path, out_path, net_size=(800, 600), params=dict()):

@@ -22,7 +22,7 @@ class DatasetCollectionView extends Component {
 
         this.state = {
             isCreateAlertOpened: false,
-            file: null,
+            files: Array(0),
         };
     }
 
@@ -47,30 +47,34 @@ class DatasetCollectionView extends Component {
             name: this.bp3.nameRef.current.value,
             project: this.projectID,
         }).then((res) => {
-
-            if (this.state.file && this.state.file.type.match('image.*')) {
-                this.props.imageModel.add({
-                    dataset: this.props.datasetCollection.retrieveID(res.url),
-                    license: null,
-                    filename: this.state.file.name,
-                    uri: this.state.file,
-                    roi: null
-                });
-            } else if (this.state.file && this.state.file.type.match('video.*')) {
-                this.props.videoModel.add({
-                    dataset: this.props.datasetCollection.retrieveID(res.url),
-                    license: null,
-                    filename: this.state.file.name,
-                    uri: this.state.file
-                })
-            }
+            this.state.files.slice().map((file, i) => {
+                if (file.type.match('image.*')) {
+                    this.props.imageModel.add({
+                        dataset: this.props.datasetCollection.retrieveID(res.url),
+                        license: null,
+                        filename: file.name,
+                        uri: file,
+                        roi: null
+                    });
+                } else if (file.type.match('video.*')) {
+                    this.props.videoModel.add({
+                        dataset: this.props.datasetCollection.retrieveID(res.url),
+                        license: null,
+                        filename: file.name,
+                        uri: file
+                    });
+                }
+            });
         });
     };
 
     handleChangeStatus = ({file, meta}, status) => {
         if (status === "done") {
+            let files = this.state.files;
+            files.push(file);
+
             this.setState({
-                file: file,
+                file: files,
             });
         }
     };

@@ -5,8 +5,12 @@ import API from "api";
 
 class Video {
     path = 'video/';
+    path_get_frame = 'get_frame/';
     query = '?dataset=%s';
+    query_video = '?video=%s&';
+    query_frame_no = '&frame_no=%s';
     @observable data = [];
+    @observable frame = null;
     @observable isLoading = false;
 
     @action async fetch(id) {
@@ -19,6 +23,19 @@ class Video {
         }
 
         return this.data;
+    }
+
+    @action async get_frame(data) {
+        let path = this.path_get_frame + this.query_video.replace("%s", data.video)
+            + this.query_frame_no.replace("%s", data.frame_no);
+        const response = await API.get(path);
+        const status = await response.status;
+
+        if (status === 200) {
+            this.frame = await response.json();
+        }
+
+        return this.frame;
     }
 
     @action async add(data) {

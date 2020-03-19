@@ -1,7 +1,11 @@
 from apps.startsmart.annotator.tools.FrameHandler import FrameHandler
-from django.shortcuts import get_object_or_404, get_list_or_404
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from typing import List, Dict, Type
+
+from startsmart.settings import PREDICTION_ROOT
+from .annotator.io.reader.OpenposeReader import OpenposeReader
+from .annotator.predictor.OpenposePredictor import OpenposePredictor
 from .models import *
 import cv2 as cv
 
@@ -26,6 +30,26 @@ class CUDNestedMixin(object):
             return insert_list
 
         return insert_list
+
+
+class PredictorSerializer:
+    def __init__(self, instance, output, predictor, mode, size, **kwargs):
+        if predictor == 'Openpose':
+
+            params = dict()
+            for k, v in kwargs.items():
+                params[k] = v
+
+            path = os.path.dirname(instance.uri.url[1:])
+            self.__predictor = OpenposePredictor(path, PREDICTION_ROOT + output,
+                                                 size, params, mode)
+
+    def get_results(self, index):
+        if not os.listdir(self.__predictor.project.project_json_path):
+            self.__predictor.infer()
+        op_handler = OpenposeReader(self.__predictor.project.project_json_path)
+        op_handler.select_result_file(index)
+        return op_handler.read()
 
 
 class JointContainerSerializer(serializers.Serializer):
@@ -325,6 +349,10 @@ class VideoSerializer(serializers.HyperlinkedModelSerializer):
         video.save()
         cVideo = cv.VideoCapture('http://' + self.context['request'].get_host() + video.uri.url)
         video.total_frames = FrameHandler.get_total_frames(cVideo)
+        ret, img = cVideo.read()
+        video.height = img.shape[0]
+        video.width = img.shape[1]
+        video.channels = img.shape[2]
         video.save()
         return video
 
@@ -339,7 +367,19 @@ class VideoSerializer(serializers.HyperlinkedModelSerializer):
         instance.save()
         cVideo = cv.VideoCapture('http://' + self.context['request'].get_host() + instance.uri.url)
         instance.total_frames = FrameHandler.get_total_frames(cVideo)
+        ret, img = cVideo.read()
+        instance.height = img.shape[0]
+        instance.width = img.shape[1]
+        instance.channels = img.shape[2]
         instance.save()
+
+    def get_frame(self, instance, frame_no):
+        cVideo = cv.VideoCapture(instance.uri.url[1:])
+        cVideo.set(cv.CAP_PROP_POS_FRAMES, int(frame_no))
+        ret, frame = cVideo.read()
+        cv.imwrite(instance.id + frame_no, frame)
+        return frame
+
 
     class Meta:
         model = Video
@@ -464,22 +504,43 @@ class AnnotationSerializer(serializers.HyperlinkedModelSerializer, CUDNestedMixi
 
     def create(self, validated_data):
         annotation = Annotation()
-        annotation.category = get_object_or_404(Category, pk=self.initial_data['category'])
+        if 'category' in self.initial_data.keys():
+            annotation.category = get_object_or_404(Category, pk=self.initial_data['category'])
+        if 'entity_id' in validated_data:
+            annotation.entity_id = validated_data['entity_id']
+        if 'predictor' in validated_data:
+            annotation.predictor = validated_data['predictor']
         if 'image' in self.initial_data.keys():
             annotation.image = get_object_or_404(Image, pk=self.initial_data['image'])
-        if 'frame' in self.initial_data.keys():
-            annotation.frame = get_object_or_404(Frame, pk=self.initial_data['frame'])
-        if 'bounding_box' in self.initial_data.keys():
-            serializer = self.cud_nested(validated_data['bounding_box'], BoundingBoxContainerSerializer)
-            annotation.bounding_box = [BoundingBoxContainer(**bounding_box.data) for bounding_box in serializer]
-        if 'keypoints' in self.initial_data.keys():
-            serializer = self.cud_nested(validated_data['keypoints'], KeypointContainerSerializer)
-            annotation.keypoints = [KeypointContainer(**keypoint.data) for keypoint in serializer]
+        if 'video' in self.initial_data.keys():
+            if 'frame' in self.initial_data.keys():
+                frame = self.initial_data['frame']
+            else:
+                frame = self.initial_data['result'].frame
+                frame.video = get_object_or_404(Video, pk=self.initial_data['video'])
+                cVideo = cv.VideoCapture(frame.video.uri.url[1:])
+                cVideo.set(cv.CAP_PROP_POS_FRAMES, frame.frame_no)
+                ret, out = cVideo.read()
+                cv.imwrite('media/frames/' + str(frame.video.dataset.id)
+                           + '/' + frame.video.md5sum + '/' + str(frame.frame_no) + '.jpg',
+                           out)
+                frame.save()
+
+            annotation.frame = frame
+
+        annotation.keypoints = self.initial_data['result'].keypoints
+        annotation.bounding_box = self.initial_data['result'].bounding_box
         annotation.save()
+
         return annotation
 
     def update(self, instance, validated_data):
-        instance.category = get_object_or_404(Category, pk=self.initial_data['category'])
+        if 'category' in self.initial_data.keys():
+            instance.category = get_object_or_404(Category, pk=self.initial_data['category'])
+        if 'entity_id' in validated_data:
+            instance.entity_id = validated_data['entity_id']
+        if 'predictor' in validated_data:
+            instance.entity_id = validated_data['predictor']
         if 'image' in self.initial_data.keys():
             instance.image = get_object_or_404(Image, pk=self.initial_data['image'])
         if 'frame' in self.initial_data.keys():

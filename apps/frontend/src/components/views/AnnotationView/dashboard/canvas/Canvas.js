@@ -19,8 +19,9 @@ class Canvas extends Component {
         this.width = this.canvas.width;
         this.height = p5.windowHeight * 0.87;
         p5.createCanvas(this.width, this.height).parent(canvasParentRef);
+        console.log(this.props.image);
         if (this.props.image) {
-            this.img = p5.loadImage(this.props.image.uri);
+            this.img = p5.loadImage(this.props.image);
         }
 
         p5.fill(255,0,0);

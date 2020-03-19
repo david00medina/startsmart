@@ -1,3 +1,4 @@
+from django.conf.urls import url
 from django.urls import path
 from rest_framework import routers
 from .views import *
@@ -17,7 +18,8 @@ router.register('annotation', AnnotationViewSet, 'annotation')
 router.register('library', LibraryViewSet, 'library')
 
 urlpatterns = [
-    path('detect', detect, name='detect'),
+    url('get_frame/', get_frame),
 ]
 
 urlpatterns += router.urls
+
