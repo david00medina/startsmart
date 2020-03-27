@@ -1,6 +1,8 @@
 import React, {Component} from 'react';
 import NavButton from "./NavButton";
 import SearchBar from "../utils/SearchBar";
+import {Button, ButtonGroup, ControlGroup} from "@blueprintjs/core";
+import {Intent} from "@blueprintjs/core/lib/cjs/common/intent";
 
 
 class NavBar extends Component {
@@ -18,18 +20,31 @@ class NavBar extends Component {
                     <span className="navbar-toggler-icon">Home</span>
                     <span className="navbar-toggler-icon">Projects</span>
                 </button>
-                <a className="navbar-brand" href="/">StartSmart</a>
+                <a className="navbar-brand" href="/">Home</a>
 
                 <div className="collapse navbar-collapse" id="navbarColor02">
                     <ul className="navbar-nav mr-auto">
                         {this.renderButtons(1, "Projects", "/projects")}
                     </ul>
-                    <SearchBar placeholder="Buscar" button_name="Buscar" />
                 </div>
+
+                <ControlGroup>
+                    <ButtonGroup fill={true} large={true}>
+                        <Button
+                            icon={"log-out"}
+                            intent={Intent.PRIMARY}
+                            onClick={this.props.onClick}
+                        >
+                            Log out
+                        </Button>
+                    </ButtonGroup>
+                </ControlGroup>
             </nav>
         );
     }
 }
+
+//<SearchBar placeholder="Buscar" button_name="Buscar" />
 
 
 export default NavBar;

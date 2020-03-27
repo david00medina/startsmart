@@ -37,10 +37,6 @@ class Dashboard extends Component {
                     <div>
                         <div className="row">
 
-                            <div id="left-section" className="pl-2">
-                                <VerticalToolbar />
-                            </div>
-
                             <div id="middle-section" className="col-10 align-content-center">
                                 <div id="canvas">
                                     <Canvas
@@ -48,10 +44,6 @@ class Dashboard extends Component {
                                         roi={[840, 220, 840, 240, 860, 240, 860, 260, 820, 260]}
                                     />
                                 </div>
-                            </div>
-
-                            <div id="right-section" className="col-1">
-                                <p>BARRA LATERAL</p>
                             </div>
 
                         </div>

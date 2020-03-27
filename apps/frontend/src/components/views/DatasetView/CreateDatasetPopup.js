@@ -1,5 +1,14 @@
 import React, { Component } from "react";
-import {Button, ButtonGroup, ControlGroup, FileInput, FormGroup, HTMLSelect, InputGroup} from "@blueprintjs/core";
+import {
+    Button,
+    ButtonGroup,
+    ControlGroup,
+    Dialog,
+    FileInput,
+    FormGroup,
+    HTMLSelect,
+    InputGroup
+} from "@blueprintjs/core";
 import {Intent} from "@blueprintjs/core/lib/cjs/common/intent";
 import {inject, observer} from "mobx-react";
 import Dropzone from "react-dropzone-uploader";
@@ -14,6 +23,7 @@ class CreateDatasetPopup extends Component {
 
     render() {
         return (
+            <Dialog isOpen={this.props.isOpen}>
             <div id={`create-dataset-view`}>
                 <div className="row align-items-center justify-content-center m-5">
                     <div className="col-auto">
@@ -31,18 +41,7 @@ class CreateDatasetPopup extends Component {
                                 />
                             </FormGroup>
 
-                            <FormGroup label={`LIBRARY`} labelInfo={`(required)`} inline={true}>
-                                <HTMLSelect
-                                    options={
-                                        this.props.libraryCollection.all.slice().map(info => {
-                                            return info.name;
-                                        })
-                                    }
-                                    fill={true}
-                                    large={true}
-                                    elementRef={this.props.selectRef}
-                                />
-                            </FormGroup>
+
 
                             <FormGroup label={`DATASET`} labelInfo={`(required)`} inline={false}>
                                 <Dropzone
@@ -71,6 +70,7 @@ class CreateDatasetPopup extends Component {
                     </div>
                 </div>
             </div>
+            </Dialog>
         );
     }
 }
@@ -78,3 +78,18 @@ class CreateDatasetPopup extends Component {
 CreateDatasetPopup.propTypes = {};
 
 export default CreateDatasetPopup;
+
+/*
+<FormGroup label={`LIBRARY`} labelInfo={`(required)`} inline={true}>
+                                <HTMLSelect
+                                    options={
+                                        this.props.libraryCollection.all.slice().map(info => {
+                                            return info.name;
+                                        })
+                                    }
+                                    fill={true}
+                                    large={true}
+                                    elementRef={this.props.selectRef}
+                                />
+                            </FormGroup>
+ */

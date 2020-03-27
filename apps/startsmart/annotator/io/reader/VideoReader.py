@@ -15,9 +15,13 @@ class VideoReader(AbstractReader):
     @staticmethod
     def read(path):
         videos = list()
-        for root, dirs, files in os.walk(os.path.relpath(path)):
+        relpath = '.' + path
+        for root, dirs, files in os.walk(relpath):
             for file in files:
                 videos.append(os.path.join(root, file))
+
+        if os.path.isfile(relpath):
+            videos.append(relpath)
 
         rVideo = VideoReader.__generate_video_capture(videos)
 

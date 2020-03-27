@@ -196,6 +196,7 @@ class Video(models.Model):
     height = models.PositiveIntegerField(default=0)
     channels = models.PositiveIntegerField(default=0)
     mean_time = models.FloatField(default=0.0)
+    memory_used = models.FloatField(default=0.0)
 
     def save(self, *args, **kwargs):
         if not self.pk:

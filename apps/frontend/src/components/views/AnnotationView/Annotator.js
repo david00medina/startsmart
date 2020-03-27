@@ -126,8 +126,8 @@ class Annotator extends Component {
             project: this.projectID,
             dataset: this.datasetID,
             predictor: 'Openpose',
-            width: 450,
-            height: 338,
+            width: 1136,
+            height: 640,
             index: total_items,
         };
         data[this.state.type === 'image' ? 'image' : 'video'] = items.slice().map((item, i) => {
@@ -139,7 +139,7 @@ class Annotator extends Component {
 
     load_frame() {
         let item = this.props.videoModel.data[0];
-        let response = this.props.videoModel.get_frame({
+        /*let response = this.props.videoModel.get_frame({
             video: API.retrievePathID(item.url),
             frame_no: this.state.index,
         });
@@ -148,7 +148,7 @@ class Annotator extends Component {
             this.setState({
                 image: response.image,
             });
-        }
+        }*/
     }
 }
 

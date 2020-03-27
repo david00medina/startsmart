@@ -1,10 +1,11 @@
 import React, {Component} from "react";
-import {Button, ButtonGroup, ControlGroup, FileInput, FormGroup, InputGroup} from "@blueprintjs/core";
+import {Button, ButtonGroup, ControlGroup, FileInput, FormGroup, InputGroup, Dialog} from "@blueprintjs/core";
 import {Intent} from "@blueprintjs/core/lib/cjs/common/intent";
 
 class CreateProjectPopup extends Component {
     render() {
         return (
+            <Dialog isOpen={this.props.isOpen}>
             <div id={`create-project-view`}>
                 <div className="row align-items-center justify-content-center m-5">
                     <div className="col-auto">
@@ -33,6 +34,7 @@ class CreateProjectPopup extends Component {
                     </div>
                 </div>
             </div>
+            </Dialog>
         );
     }
 }

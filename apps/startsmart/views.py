@@ -326,7 +326,6 @@ class AnnotationViewSet(viewsets.ModelViewSet):
                     existing = list(self.queryset.filter(frame__video__md5sum__iexact=file_instance.md5sum)
                                     .filter(frame__frame_no=i))
 
-
                 if len(existing) > 0:
                     for object in existing:
                         serializer = self.serializer_class(object, data=request.data,
@@ -338,13 +337,24 @@ class AnnotationViewSet(viewsets.ModelViewSet):
 
                 out_path = '/' + request.data['project'] + '/' + request.data['dataset']
                 predictor = PredictorSerializer(file_instance, out_path, request.data['predictor'], mode,
-                                                (request.data['width'], request.data['height']),
+                                                (file_instance.width, file_instance.height),
                                                 model_folder='models',
                                                 render_pose=2, body=1)
 
+                results, monitor = predictor.get_results(i)
 
-                results = predictor.get_results(i)
+                import json
+                json_path = './predictions/' \
+                            + str(file_instance.dataset.project.pk) + '/' \
+                            + str(file_instance.dataset.pk) + '/openpose/results/mean_time.json'
+                with open(json_path) as json_file:
+                    data = json.load(json_file)
+                    file_instance.mean_time = data[os.path.basename(file_instance.uri.path)]
 
+                if monitor is not None:
+                    file_instance.memory_used = monitor.used_memory
+
+                file_instance.save()
 
                 for result in results:
                     data = request.data.copy()
@@ -366,7 +376,6 @@ class AnnotationViewSet(viewsets.ModelViewSet):
                             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                         else:
                             response.append(serializer.data)
-
 
         return Response(response, status=status.HTTP_201_CREATED)
 

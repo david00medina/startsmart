@@ -6,6 +6,7 @@ from typing import List, Dict, Type
 from startsmart.settings import PREDICTION_ROOT
 from .annotator.io.reader.OpenposeReader import OpenposeReader
 from .annotator.predictor.OpenposePredictor import OpenposePredictor
+from .annotator.tools.MemoryMonitor import MemoryMonitor
 from .models import *
 import cv2 as cv
 
@@ -40,16 +41,22 @@ class PredictorSerializer:
             for k, v in kwargs.items():
                 params[k] = v
 
-            path = os.path.dirname(instance.uri.url[1:])
+            path = instance.uri.url
             self.__predictor = OpenposePredictor(path, PREDICTION_ROOT + output,
                                                  size, params, mode)
 
     def get_results(self, index):
-        if not os.listdir(self.__predictor.project.project_json_path):
+        monitor = None
+        json_path = self.__predictor.project.project_json_path
+        if not os.path.exists(json_path) or not os.listdir(json_path):
+            monitor = MemoryMonitor(10)
             self.__predictor.infer()
+            monitor.stop()
+
         op_handler = OpenposeReader(self.__predictor.project.project_json_path)
         op_handler.select_result_file(index)
-        return op_handler.read()
+
+        return op_handler.read(), monitor
 
 
 class JointContainerSerializer(serializers.Serializer):

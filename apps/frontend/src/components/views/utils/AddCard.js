@@ -1,14 +1,34 @@
 import React, {Component} from "react";
-import {Card, Elevation, Icon, Intent} from "@blueprintjs/core";
+import {Card, Dialog, Elevation, Icon, Intent} from "@blueprintjs/core";
+import CreateProjectPopup from "../ProjectView/CreateProjectPopup";
+import CreateDatasetPopup from "../DatasetView/CreateDatasetPopup";
 
 class AddCard extends Component {
+    constructor(props) {
+        super();
+        this.state = {
+            isOpenProject: false,
+            isOpenDataset: false,
+        }
+    }
     handleClick = (e) => {
-        console.log("Launch add Project module");
+        if (this.props.name === 'Project') {
+            this.setState({
+                isOpenProject: true,
+            });
+
+        } else if (this.props.name === 'Dataset') {
+            this.setState({
+                isOpenDataset: true,
+            });
+        }
     };
 
     render() {
         return (
             <div id="add-card" className="d-flex container justify-content-center">
+                <CreateProjectPopup isOpen={this.state.isOpenProject}/>
+                <CreateDatasetPopup isOpen={this.state.isOpenDataset}/>
                 <Card
                     id="project-card"
                     interactive={true}

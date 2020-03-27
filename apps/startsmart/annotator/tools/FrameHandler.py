@@ -22,8 +22,8 @@ class FrameHandler:
     @staticmethod
     def resize_frame(frame, in_size, out_size=(800, 600)):
         dim = FrameHandler.adjust_scale(in_size, out_size)
-
-        resized = cv.resize(frame, dim, interpolation=cv.INTER_AREA)
+        if frame is not None:
+            resized = cv.resize(frame, dim, interpolation=cv.INTER_AREA)
 
         return resized
 
