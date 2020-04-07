@@ -1,7 +1,6 @@
 import React, {Component} from "react";
 import {Card, Dialog, Elevation, Icon, Intent} from "@blueprintjs/core";
-import CreateProjectPopup from "../ProjectView/CreateProjectPopup";
-import CreateDatasetPopup from "../DatasetView/CreateDatasetPopup";
+import GeneralPopUp from "./GeneralPopUp"
 
 class AddCard extends Component {
     constructor(props) {
@@ -11,29 +10,26 @@ class AddCard extends Component {
             isOpenDataset: false,
         }
     }
-    handleClick = (e) => {
-        if (this.props.name === 'Project') {
-            this.setState({
-                isOpenProject: true,
-            });
-
-        } else if (this.props.name === 'Dataset') {
-            this.setState({
-                isOpenDataset: true,
-            });
-        }
-    };
 
     render() {
         return (
             <div id="add-card" className="d-flex container justify-content-center">
-                <CreateProjectPopup isOpen={this.state.isOpenProject}/>
-                <CreateDatasetPopup isOpen={this.state.isOpenDataset}/>
+
+                <GeneralPopUp
+                    bp3={this.props.bp3}
+                    name={this.props.name}
+                    isOpenCreate={this.props.isOpenCreate}
+                    onClick={this.props.onCreate}
+                    onKeyPress={this.props.onKeyPress}
+                    onInputChange={this.props.onInputChange}
+                    onChangeStatus={this.props.onChangeStatus}
+                />
+
                 <Card
                     id="project-card"
                     interactive={true}
                     elevation={Elevation.TWO}
-                    onClick={this.handleClick}
+                    onClick={this.props.onClick}
                     style={{width: "20vw", height: "25vh"}}
                     className="d-flex align-items-center justify-content-center"
                 >
@@ -50,5 +46,5 @@ class AddCard extends Component {
 }
 
 AddCard.propTypes = {};
-
+// <CreateDatasetPopup isOpen={this.state.isOpenDataset}/>
 export default AddCard;

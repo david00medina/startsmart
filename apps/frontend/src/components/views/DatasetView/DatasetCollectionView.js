@@ -23,6 +23,7 @@ class DatasetCollectionView extends Component {
         this.state = {
             isCreateAlertOpened: false,
             files: Array(0),
+            isOpenCreate: false,
         };
     }
 
@@ -33,12 +34,20 @@ class DatasetCollectionView extends Component {
     addDatasetButton = (e) => {
         this.doAdd();
         this.bp3.nameRef.current.value = null;
+
+        this.setState({
+            isOpenCreate: false,
+        });
     };
 
     addDatasetKeyPress = (e) => {
         if (e.key === 'Enter') {
             this.doAdd();
             e.target.value = null;
+
+            this.setState({
+                isOpenCreate: false,
+            });
         }
     };
 
@@ -79,6 +88,13 @@ class DatasetCollectionView extends Component {
         }
     };
 
+    handleCreateCardClick = (e) => {
+        e.stopPropagation();
+        this.setState({
+            isOpenCreate: true,
+        });
+    };
+
     render() {
         const datasets = this.props.datasetCollection.all;
 
@@ -99,7 +115,16 @@ class DatasetCollectionView extends Component {
                         {datasets.slice().map( (info, i) =>
                             <Dataset key={i} projectID={this.projectID} {...info} />
                         )}
-                        <AddCard name={`Dataset`} />
+                        <AddCard
+                            bp3={this.bp3}
+                            name={`Dataset`}
+                            onClick={this.handleCreateCardClick}
+                            isOpenCreate={this.state.isOpenCreate}
+                            onCreate={this.addDatasetButton}
+                            onKeyPress={this.addDatasetKeyPress}
+                            onInputChange={this.handleInputChange}
+                            onChangeStatus={this.handleChangeStatus}
+                        />
                     </div>
                 </FormGroup>
             </div>

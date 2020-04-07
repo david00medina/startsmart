@@ -27,7 +27,6 @@ class NavBar extends Component {
                         {this.renderButtons(1, "Projects", "/projects")}
                     </ul>
                 </div>
-
                 <ControlGroup>
                     <ButtonGroup fill={true} large={true}>
                         <Button
@@ -39,6 +38,7 @@ class NavBar extends Component {
                         </Button>
                     </ButtonGroup>
                 </ControlGroup>
+
             </nav>
         );
     }
@@ -46,5 +46,7 @@ class NavBar extends Component {
 
 //<SearchBar placeholder="Buscar" button_name="Buscar" />
 
+/*
 
+*/
 export default NavBar;

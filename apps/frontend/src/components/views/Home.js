@@ -23,6 +23,7 @@ class Home extends Component {
                         <FormGroup label={'PASSWORD'} labelInfo={`(required)`} inline={true}>
                             <InputGroup
                                 id="password"
+                                placeholder="Password"
                                 type="password"
                                 fill={true}
                                 large={true}

@@ -14,6 +14,7 @@ class ProjectCollectionView extends Component {
         super(props);
         this.state = {
             isCreateAlertOpened: false,
+            isOpenCreate: false,
         }
     }
 
@@ -23,12 +24,15 @@ class ProjectCollectionView extends Component {
 
     addProjectButton = e => {
         e.preventDefault();
-
         this.props.projectCollection.add({
             name: document.getElementById("project-name-create").value,
         });
 
         document.getElementById("project-name-create").value = null;
+
+        this.setState({
+            isOpenCreate: false,
+        });
     };
 
     addProjectKeyPress = (e) => {
@@ -38,6 +42,10 @@ class ProjectCollectionView extends Component {
             });
 
             e.target.value = null;
+
+            this.setState({
+                isOpenCreate: false,
+            });
         }
     };
 
@@ -100,21 +108,33 @@ class ProjectCollectionView extends Component {
         }
     };
 
+    handleCreateCardClick = (e) => {
+        e.stopPropagation();
+        this.setState({
+            isOpenCreate: true,
+        });
+    };
+
     render() {
         const projects = this.props.projectCollection.all;
+
 
         return (
             <div id="project-collection" className="container-fluid m-3" style={{"height": document.documentElement.clientHeight*0.7}}>
                 <h1 className="text-center">Projects</h1>
-
-                <CreateProjectPopup onKeyPress={this.addProjectKeyPress} onClick={this.addProjectButton} />
 
                 <FormGroup labelFor="projects-form">
                     <div className="d-flex align-items-center" style={{height: "54vh"}} >
                         {projects.slice().map( (info, i) =>
                             <Project key={i} {...info} />
                         )}
-                        <AddCard name={`Project`} />
+                        <AddCard
+                            name={`Project`}
+                            onClick={this.handleCreateCardClick}
+                            isOpenCreate={this.state.isOpenCreate}
+                            onCreate={this.addProjectButton}
+                            onKeyPress={this.addProjectKeyPress}
+                        />
                     </div>
                 </FormGroup>
             </div>
